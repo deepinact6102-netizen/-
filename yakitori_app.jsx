@@ -51,11 +51,6 @@ function getEffectiveDelivery(itemName, dayIndex, daysData) {
   return "";
 }
 
-function getEffectiveConfirmed(itemName, dayIndex, daysData) {
-  if (isNoDeliveryDay(dayIndex, daysData)) return "0";
-  return daysData[DAYS[dayIndex]].confirmed[itemName];
-}
-
 function calcOrder(item, dayIndex, daysData) {
   const day = DAYS[dayIndex];
   const d = daysData[day];
@@ -67,7 +62,7 @@ function calcOrder(item, dayIndex, daysData) {
 
   if (isNaN(remain) || isNaN(nextDayDelivery)) return "";
 
-  const base = Math.max(remain + nextDayDelivery - item.daily + item.daily + item.spare, 0);
+  const base = Math.max(remain + nextDayDelivery + item.spare, 0);
   const multi = parseFloat(d.multiDay) || 1;
   const courseNum = item.course ? parseFloat(d.course) || 0 : 0;
   return Math.ceil(base * multi + courseNum);
@@ -327,8 +322,6 @@ export default function YakitoriApp() {
                 return "";
               })();
               const isAutoFilled = manualDelivery === "" && autoDelivery !== "";
-              const displayDelivery = noDelivery ? "0" : (manualDelivery || autoDelivery);
-              const confirmedVal = noDelivery ? "0" : daysData[activeDay].confirmed[item.name];
 
               return (
                 <div key={item.name} style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 1fr", padding: "5px 8px", alignItems: "center", borderBottom: "1px solid #f0ebe5", background: noDelivery ? "#fafafa" : (idx % 2 === 0 ? "#fff" : "#fdfbf9"), opacity: noDelivery ? 0.6 : 1 }}>
