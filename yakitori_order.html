@@ -568,7 +568,7 @@
       tr.innerHTML = `
         <td class="name">${item.icon} ${item.name}</td>
         <td class="target">${item.target}</td>
-        <td class="delivery-cell">${del > 0 ? del : '—'}${item.fixedDelivery ? '<br><span style="font-size:0.6rem;color:#555">固定</span>' : ''}</td>
+        <td class="delivery-cell">${del > 0 ? del : '—'}</td>
         <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0"></td>
         <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}"></td>
         <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
