@@ -329,6 +329,107 @@
       color: #555;
       line-height: 1.7;
     }
+
+    /* カメラ読み取りボタン */
+    .btn-camera { background: #4a90d9; color: #fff; }
+    .btn-camera:active { background: #357abd; }
+
+    /* OCRモーダル */
+    .ocr-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .ocr-overlay.show { display: block; }
+
+    .ocr-box {
+      background: #222;
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .ocr-box h2 {
+      font-size: 0.95rem;
+      color: #f5c842;
+      margin-bottom: 12px;
+    }
+
+    .ocr-preview {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      max-height: 200px;
+      object-fit: contain;
+      background: #111;
+    }
+
+    .ocr-status {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .ocr-rows { display: flex; flex-direction: column; gap: 6px; }
+
+    .ocr-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #2a2a2a;
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+
+    .ocr-row .item-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .ocr-row input {
+      width: 60px;
+      padding: 5px 6px;
+      border-radius: 5px;
+      border: 1px solid #555;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.9rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .ocr-row input::-webkit-outer-spin-button,
+    .ocr-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .ocr-row input:focus { border-color: #f5c842; }
+
+    .ocr-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .ocr-actions button {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ocr-apply { background: #f5c842; color: #1a1a1a; }
+    .ocr-cancel { background: #333; color: #ccc; }
   </style>
 </head>
 <body>
@@ -387,6 +488,26 @@
   <button class="btn btn-calc" onclick="calcAll()">発注数を計算</button>
   <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
   <button class="btn btn-reset" onclick="clearDay()">リセット</button>
+</div>
+<div style="margin-top:8px;">
+  <button class="btn btn-camera" style="width:100%;padding:11px;" onclick="openCamera()">📷 残数を写真から読み取る</button>
+</div>
+
+<!-- カメラ入力（非表示） -->
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageCapture(this)">
+
+<!-- OCRモーダル -->
+<div class="ocr-overlay" id="ocrOverlay">
+  <div class="ocr-box">
+    <h2>📷 残数の読み取り</h2>
+    <img id="ocrPreview" class="ocr-preview" src="" alt="撮影画像">
+    <div class="ocr-status" id="ocrStatus">読み取り中...</div>
+    <div class="ocr-rows" id="ocrRows"></div>
+    <div class="ocr-actions">
+      <button class="ocr-apply" onclick="applyOCR()">この内容で入力</button>
+      <button class="ocr-cancel" onclick="closeOCR()">キャンセル</button>
+    </div>
+  </div>
 </div>
 
 <div class="footer-note">
@@ -627,6 +748,98 @@
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
+  }
+
+  // ---- カメラ・OCR ----
+
+  function openCamera() {
+    document.getElementById('cameraInput').value = '';
+    document.getElementById('cameraInput').click();
+  }
+
+  async function handleImageCapture(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // プレビュー表示＆モーダル開く
+    const url = URL.createObjectURL(file);
+    document.getElementById('ocrPreview').src = url;
+    document.getElementById('ocrStatus').textContent = '読み取り中... しばらくお待ちください';
+    document.getElementById('ocrRows').innerHTML = '';
+    document.getElementById('ocrOverlay').classList.add('show');
+
+    // Tesseract.js を CDN から動的ロード
+    if (!window.Tesseract) {
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
+    }
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(file, 'jpn+eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            const pct = Math.round(m.progress * 100);
+            document.getElementById('ocrStatus').textContent = `読み取り中... ${pct}%`;
+          }
+        }
+      });
+
+      const numbers = extractNumbers(text);
+      renderOCRRows(numbers);
+      document.getElementById('ocrStatus').textContent =
+        numbers.length > 0
+          ? '数字を確認して「この内容で入力」をタップしてください'
+          : '数字を認識できませんでした。手動で入力してください';
+    } catch (e) {
+      document.getElementById('ocrStatus').textContent = '読み取りに失敗しました。手動で入力してください';
+      renderOCRRows([]);
+    }
+  }
+
+  function extractNumbers(text) {
+    // 行ごとに最初の数字を抽出
+    return text.split('\n')
+      .map(line => { const m = line.match(/\d+/); return m ? parseInt(m[0]) : null; })
+      .filter(n => n !== null && n >= 0 && n <= 9999)
+      .slice(0, items.length);
+  }
+
+  function renderOCRRows(numbers) {
+    const container = document.getElementById('ocrRows');
+    container.innerHTML = '';
+    items.forEach((item, idx) => {
+      const val = numbers[idx] ?? '';
+      const row = document.createElement('div');
+      row.className = 'ocr-row';
+      row.innerHTML = `
+        <span class="item-name">${item.icon} ${item.name}</span>
+        <input type="number" id="ocr_${idx}" min="0" value="${val}" placeholder="—">
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function applyOCR() {
+    items.forEach((_, idx) => {
+      const val = document.getElementById(`ocr_${idx}`)?.value;
+      const field = document.getElementById(`remaining_${idx}`);
+      if (field && val !== '') field.value = val;
+    });
+    saveCurrent();
+    closeOCR();
+  }
+
+  function closeOCR() {
+    document.getElementById('ocrOverlay').classList.remove('show');
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
   }
 </script>
 </body>
