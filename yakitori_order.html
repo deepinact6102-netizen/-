@@ -11,32 +11,30 @@
       font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
       background: #1a1a1a;
       color: #f0e6d3;
-      padding: 20px;
+      padding: 12px;
       min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
     }
 
     h1 {
-      font-size: 1.4rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #f5c842;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .nav-bar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-
-    .nav-bar label {
-      font-size: 0.85rem;
-      color: #aaa;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 10px;
     }
 
     .nav-bar input[type="date"] {
-      padding: 6px 10px;
+      flex: 1;
+      padding: 7px 8px;
       border-radius: 6px;
       border: 1px solid #555;
       background: #2a2a2a;
@@ -44,68 +42,75 @@
       font-size: 0.9rem;
       cursor: pointer;
       outline: none;
+      text-align: center;
     }
 
-    .nav-bar input[type="date"]:focus {
-      border-color: #f5c842;
-    }
+    .nav-bar input[type="date"]:focus { border-color: #f5c842; }
 
     .nav-btn {
-      padding: 6px 12px;
+      padding: 7px 12px;
       border-radius: 6px;
       border: 1px solid #555;
       background: #2a2a2a;
       color: #f0e6d3;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      white-space: nowrap;
       transition: background 0.15s;
     }
 
-    .nav-btn:hover { background: #3a3a3a; }
+    .nav-btn:active { background: #444; }
 
     .info-bar {
-      font-size: 0.8rem;
-      color: #888;
-      margin-bottom: 14px;
+      font-size: 0.72rem;
+      color: #777;
+      margin-bottom: 10px;
     }
 
     .info-bar span { color: #f5c842; }
 
     .table-wrapper {
-      overflow-x: auto;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
     }
 
     table {
       border-collapse: collapse;
       background: #222;
+      width: 100%;
+      table-layout: fixed;
     }
 
     thead tr { background: #2e2e2e; }
 
     thead th {
-      padding: 9px 10px;
+      padding: 7px 4px;
       text-align: center;
-      font-size: 0.78rem;
+      font-size: 0.7rem;
       font-weight: 600;
       color: #f5c842;
       border-bottom: 2px solid #444;
       white-space: nowrap;
+      overflow: hidden;
     }
 
-    thead th:first-child { text-align: left; }
+    /* 列幅固定 */
+    th:nth-child(1), td:nth-child(1) { width: 22%; }
+    th:nth-child(2), td:nth-child(2) { width: 10%; }
+    th:nth-child(3), td:nth-child(3) { width: 10%; }
+    th:nth-child(4), td:nth-child(4) { width: 16%; }
+    th:nth-child(5), td:nth-child(5) { width: 16%; }
+    th:nth-child(6), td:nth-child(6) { width: 16%; }
 
-    tbody tr {
-      border-bottom: 1px solid #2e2e2e;
-      transition: background 0.1s;
-    }
+    thead th:first-child { text-align: left; padding-left: 8px; }
 
-    tbody tr:hover { background: #272727; }
+    tbody tr { border-bottom: 1px solid #2a2a2a; }
     tbody tr:last-child { border-bottom: none; }
+    tbody tr:active { background: #2c2c2c; }
 
     td {
-      padding: 7px 8px;
+      padding: 6px 2px;
       text-align: center;
       vertical-align: middle;
     }
@@ -113,18 +118,21 @@
     td.name {
       text-align: left;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.82rem;
+      padding-left: 8px;
       white-space: nowrap;
-      padding-right: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    td.target { color: #888; font-size: 0.85rem; }
+    td.target { color: #888; font-size: 0.8rem; }
 
-    td.delivery-cell { color: #7ec8e3; font-size: 0.9rem; font-weight: 600; }
+    td.delivery-cell { color: #7ec8e3; font-size: 0.85rem; font-weight: 600; }
 
     td input[type="number"] {
-      width: 52px;
-      padding: 4px 4px;
+      width: 100%;
+      max-width: 52px;
+      padding: 5px 2px;
       border-radius: 5px;
       border: 1px solid #444;
       background: #1a1a1a;
@@ -132,7 +140,6 @@
       text-align: center;
       font-size: 0.85rem;
       outline: none;
-      transition: border-color 0.15s;
       -moz-appearance: textfield;
     }
 
@@ -154,39 +161,38 @@
       color: #f5c842;
       font-weight: 700;
       background: #1e1a00;
-      width: 58px;
     }
 
     td.order-cell input:focus { background: #252000; }
 
     .buttons {
       display: flex;
-      gap: 10px;
-      margin-top: 18px;
-      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
     }
 
     .btn {
-      padding: 9px 20px;
-      border-radius: 7px;
+      flex: 1;
+      padding: 11px 8px;
+      border-radius: 8px;
       border: none;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s;
     }
 
     .btn-primary { background: #f5c842; color: #1a1a1a; }
-    .btn-primary:hover { background: #ffd966; }
+    .btn-primary:active { background: #ffd966; }
 
     .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
-    .btn-secondary:hover { background: #333; }
+    .btn-secondary:active { background: #333; }
 
     .footer-note {
-      margin-top: 14px;
-      font-size: 0.76rem;
+      margin-top: 12px;
+      font-size: 0.7rem;
       color: #555;
-      line-height: 1.6;
+      line-height: 1.7;
     }
   </style>
 </head>
@@ -212,11 +218,11 @@
     <thead>
       <tr>
         <th>名称</th>
-        <th>1日目安</th>
+        <th>目安</th>
         <th>納品</th>
         <th>残数</th>
-        <th>予測数</th>
-        <th>発注数</th>
+        <th>予測</th>
+        <th>発注</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
