@@ -71,10 +71,10 @@
     }
 
     table {
-      width: 100%;
+      width: auto;
       border-collapse: collapse;
       background: #222;
-      min-width: 680px;
+      min-width: 0;
     }
 
     thead tr {
@@ -82,19 +82,19 @@
     }
 
     thead th {
-      padding: 12px 14px;
+      padding: 8px 10px;
       text-align: center;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: #f5c842;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.03em;
       border-bottom: 2px solid #444;
       white-space: nowrap;
     }
 
     thead th:first-child {
       text-align: left;
-      width: 120px;
+      width: 90px;
     }
 
     tbody tr {
@@ -111,7 +111,7 @@
     }
 
     td {
-      padding: 10px 14px;
+      padding: 7px 8px;
       text-align: center;
       vertical-align: middle;
     }
@@ -131,14 +131,14 @@
     }
 
     td input[type="number"] {
-      width: 72px;
-      padding: 6px 8px;
-      border-radius: 6px;
+      width: 52px;
+      padding: 4px 4px;
+      border-radius: 5px;
       border: 1px solid #444;
       background: #1a1a1a;
       color: #f0e6d3;
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       outline: none;
       transition: border-color 0.15s;
       -moz-appearance: textfield;
@@ -241,15 +241,15 @@
 
 <script>
   const items = [
-    { name: 'ねぎま',  icon: '🍢', target: 100 },
-    { name: 'むね',    icon: '🍗', target: 80  },
-    { name: 'ぼんじり', icon: '🍢', target: 60  },
-    { name: 'せせり',  icon: '🍢', target: 60  },
-    { name: 'ハツ',    icon: '❤️', target: 50  },
-    { name: 'レバー',  icon: '🫀', target: 50  },
-    { name: 'とり皮',  icon: '🍢', target: 70  },
-    { name: '砂肝',   icon: '🍢', target: 40  },
-    { name: 'ささみ',  icon: '🍢', target: 50  },
+    { name: 'ねぎま',   icon: '🍢', target: 30 },
+    { name: 'むね',     icon: '🍗', target: 10 },
+    { name: 'ぼんじり', icon: '🍢', target: 30 },
+    { name: 'せせり',   icon: '🍢', target: 15 },
+    { name: 'ハツ',     icon: '❤️', target: 30 },
+    { name: 'レバー',   icon: '🫀', target: 10 },
+    { name: 'とり皮',   icon: '🍢', target: 15 },
+    { name: '砂肝',    icon: '🍢', target: 15 },
+    { name: 'ささみ',   icon: '🍢', target: 30 },
   ];
 
   const days = ['月', '火', '水', '木', '金', '土', '日'];
