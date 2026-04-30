@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>焼き鳥 発注表</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #f5c842;
+    }
+
+    .date-info {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .week-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .week-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .week-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+      font-weight: 700;
+    }
+
+    .week-tab:hover:not(.active) {
+      background: #333;
+      color: #f0e6d3;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      min-width: 680px;
+    }
+
+    thead tr {
+      background: #2e2e2e;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #f5c842;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #444;
+      white-space: nowrap;
+    }
+
+    thead th:first-child {
+      text-align: left;
+      width: 120px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #333;
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover {
+      background: #2a2a2a;
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    td {
+      padding: 10px 14px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    td.name {
+      text-align: left;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #f0e6d3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    td.name .icon {
+      font-size: 1.1rem;
+    }
+
+    td input[type="number"] {
+      width: 72px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    td input[type="number"]::-webkit-outer-spin-button,
+    td input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    td input[type="number"]:focus {
+      border-color: #f5c842;
+      background: #252525;
+    }
+
+    td.order-cell input[type="number"] {
+      border-color: #f5c842;
+      color: #f5c842;
+      font-weight: 700;
+      background: #1e1a00;
+    }
+
+    td.order-cell input[type="number"]:focus {
+      background: #252000;
+    }
+
+    td.target {
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .calc-btn {
+      margin-top: 20px;
+      padding: 10px 24px;
+      background: #f5c842;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .calc-btn:hover {
+      background: #ffd966;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-size: 0.78rem;
+      color: #666;
+    }
+
+    .badge {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 4px;
+    }
+
+    .badge.low { background: #e05252; }
+    .badge.ok  { background: #52c87a; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍢 焼き鳥 発注表</h1>
+  <div class="date-info" id="dateInfo"></div>
+</div>
+
+<div class="week-tabs" id="weekTabs"></div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>名称</th>
+        <th>1日目安（本）</th>
+        <th>納品（本）</th>
+        <th>残数（本）</th>
+        <th>予測数（本）</th>
+        <th>発注数（本）</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div style="display:flex; gap:12px; margin-top:20px; align-items:center;">
+  <button class="calc-btn" onclick="calcAll()">発注数を自動計算</button>
+  <button class="calc-btn" style="background:#333; color:#f0e6d3; border:1px solid #555;" onclick="clearDay()">この日をリセット</button>
+</div>
+
+<div class="footer-note">
+  ※ 発注数の自動計算：予測数 ＋ 1日目安 − 残数（在庫補充分）
+</div>
+
+<script>
+  const items = [
+    { name: 'ねぎま',  icon: '🍢', target: 100 },
+    { name: 'むね',    icon: '🍗', target: 80  },
+    { name: 'ぼんじり', icon: '🍢', target: 60  },
+    { name: 'せせり',  icon: '🍢', target: 60  },
+    { name: 'ハツ',    icon: '❤️', target: 50  },
+    { name: 'レバー',  icon: '🫀', target: 50  },
+    { name: 'とり皮',  icon: '🍢', target: 70  },
+    { name: '砂肝',   icon: '🍢', target: 40  },
+    { name: 'ささみ',  icon: '🍢', target: 50  },
+  ];
+
+  const days = ['月', '火', '水', '木', '金', '土', '日'];
+  let currentDay = 0;
+
+  // Storage key per day
+  const storageKey = (day, item, field) => `yakitori_d${day}_${item}_${field}`;
+
+  function getToday() {
+    const d = new Date();
+    return d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+  }
+
+  function buildTabs() {
+    const container = document.getElementById('weekTabs');
+    container.innerHTML = '';
+    days.forEach((label, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'week-tab' + (i === currentDay ? ' active' : '');
+      btn.textContent = label + '曜日';
+      btn.onclick = () => switchDay(i);
+      container.appendChild(btn);
+    });
+  }
+
+  function switchDay(i) {
+    saveCurrentDay();
+    currentDay = i;
+    buildTabs();
+    renderTable();
+  }
+
+  function saveCurrentDay() {
+    items.forEach((item, idx) => {
+      ['delivery', 'remaining', 'forecast', 'order'].forEach(field => {
+        const el = document.getElementById(`${field}_${idx}`);
+        if (el) localStorage.setItem(storageKey(currentDay, idx, field), el.value);
+      });
+    });
+  }
+
+  function renderTable() {
+    const body = document.getElementById('tableBody');
+    body.innerHTML = '';
+
+    items.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+
+      const load = (field) => localStorage.getItem(storageKey(currentDay, idx, field)) || '';
+
+      tr.innerHTML = `
+        <td class="name"><span class="icon">${item.icon}</span>${item.name}</td>
+        <td class="target">${item.target}</td>
+        <td><input type="number" id="delivery_${idx}" min="0" value="${load('delivery')}" placeholder="0" oninput="autoCalc(${idx})"></td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${load('remaining')}" placeholder="0" oninput="autoCalc(${idx})"></td>
+        <td><input type="number" id="forecast_${idx}" min="0" value="${load('forecast')}" placeholder="0" oninput="autoCalc(${idx})"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${load('order')}" placeholder="—"></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function autoCalc(idx) {
+    const target   = items[idx].target;
+    const delivery = parseInt(document.getElementById(`delivery_${idx}`).value)   || 0;
+    const remaining= parseInt(document.getElementById(`remaining_${idx}`).value)  || 0;
+    const forecast = parseInt(document.getElementById(`forecast_${idx}`).value)   || 0;
+
+    // 発注数 = 予測数 + 1日目安 - 残数 - 納品予定 (0以下なら0)
+    const order = Math.max(0, forecast + target - remaining - delivery);
+    document.getElementById(`order_${idx}`).value = order || '';
+  }
+
+  function calcAll() {
+    items.forEach((_, idx) => autoCalc(idx));
+  }
+
+  function clearDay() {
+    if (!confirm(`${days[currentDay]}曜日のデータをリセットしますか？`)) return;
+    items.forEach((_, idx) => {
+      ['delivery', 'remaining', 'forecast', 'order'].forEach(field => {
+        localStorage.removeItem(storageKey(currentDay, idx, field));
+        const el = document.getElementById(`${field}_${idx}`);
+        if (el) el.value = '';
+      });
+    });
+  }
+
+  // Init
+  document.getElementById('dateInfo').textContent = getToday();
+  buildTabs();
+  renderTable();
+
+  // Auto-save on unload
+  window.addEventListener('beforeunload', saveCurrentDay);
+</script>
+</body>
+</html>
