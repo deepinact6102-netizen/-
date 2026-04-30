@@ -247,6 +247,76 @@
     .btn-save:active  { background: #27ae60; }
     .btn-reset:active { background: #333; }
 
+    /* オプションパネル */
+    .options-panel {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #252525;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .option-label {
+      font-size: 0.72rem;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .day-toggle {
+      display: flex;
+      gap: 3px;
+    }
+
+    .day-toggle button {
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #aaa;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .day-toggle button.active {
+      background: #e07020;
+      color: #fff;
+      border-color: #e07020;
+    }
+
+    .course-input {
+      width: 52px;
+      padding: 4px 4px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.85rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .course-input::-webkit-outer-spin-button,
+    .course-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .course-input:focus { border-color: #a070f0; }
+
+    .course-badge {
+      font-size: 0.68rem;
+      color: #a070f0;
+      white-space: nowrap;
+    }
+
     .footer-note {
       margin-top: 10px;
       font-size: 0.68rem;
@@ -269,6 +339,24 @@
 
 <div class="info-bar">
   納品欄は <span id="deliveryFromLabel">—</span> の発注数（中1日）
+</div>
+
+<!-- 注文日数 & コース人数 -->
+<div class="options-panel">
+  <div class="option-group">
+    <span class="option-label">注文日数</span>
+    <div class="day-toggle">
+      <button id="days1" class="active" onclick="setOrderDays(1)">1日</button>
+      <button id="days2" onclick="setOrderDays(2)">2日</button>
+      <button id="days3" onclick="setOrderDays(3)">3日</button>
+    </div>
+  </div>
+  <div class="option-group">
+    <span class="option-label">コース人数</span>
+    <input type="number" class="course-input" id="coursePeople" min="0" value="0" placeholder="0">
+    <span class="option-label">人</span>
+  </div>
+  <span class="course-badge" id="courseBadge"></span>
 </div>
 
 <div class="table-wrapper">
@@ -295,23 +383,45 @@
 
 <div class="footer-note">
   ※ 予測：1日目安がデフォルト（変更可）<br>
-  ※ 発注 ＝ max( 0, 予測 − 残数 − 納品 ）
+  ※ 発注 ＝ max( 0, 予測×日数 ＋ コース人数 − 残数 − 納品 ）<br>
+  ※ コース加算対象：ねぎま・ハツ・ささみ
 </div>
 
 <div class="toast" id="toast">保存しました</div>
 
 <script>
   const items = [
-    { name: 'ねぎま',   icon: '🍢', target: 30 },
-    { name: 'むね',     icon: '🍗', target: 10 },
-    { name: 'ぼんじり', icon: '🍢', target: 30 },
-    { name: 'せせり',   icon: '🍢', target: 15 },
-    { name: 'ハツ',     icon: '❤️', target: 30 },
-    { name: 'レバー',   icon: '🫀', target: 10 },
-    { name: 'とり皮',   icon: '🍢', target: 15 },
-    { name: '砂肝',    icon: '🍢', target: 15 },
-    { name: 'ささみ',   icon: '🍢', target: 30 },
+    { name: 'ねぎま',   icon: '🍢', target: 30, course: true  },
+    { name: 'むね',     icon: '🍗', target: 10, course: false },
+    { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
+    { name: 'せせり',   icon: '🍢', target: 15, course: false },
+    { name: 'ハツ',     icon: '❤️', target: 30, course: true  },
+    { name: 'レバー',   icon: '🫀', target: 10, course: false },
+    { name: 'とり皮',   icon: '🍢', target: 15, course: false },
+    { name: '砂肝',    icon: '🍢', target: 15, course: false },
+    { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
   ];
+
+  let orderDays = 1;
+
+  function setOrderDays(n) {
+    orderDays = n;
+    [1,2,3].forEach(i => {
+      document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
+    });
+    updateCourseBadge();
+  }
+
+  function updateCourseBadge() {
+    const people = parseInt(document.getElementById('coursePeople')?.value) || 0;
+    const badge = document.getElementById('courseBadge');
+    if (!badge) return;
+    if (people > 0) {
+      badge.textContent = `ねぎま・ハツ・ささみ +${people}本`;
+    } else {
+      badge.textContent = '';
+    }
+  }
 
   const WD = ['日','月','火','水','木','金','土'];
 
@@ -468,12 +578,16 @@
   }
 
   function calcAll() {
+    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
+    const { values: delivery } = getDelivery(currentDate);
+
     items.forEach((item, idx) => {
-      const { values: delivery } = getDelivery(currentDate);
       const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
       const forecast  = parseInt(document.getElementById(`forecast_${idx}`).value)  || item.target;
       const del       = delivery[idx] || 0;
-      document.getElementById(`order_${idx}`).value = Math.max(0, forecast - remaining - del);
+      const courseAdd = item.course ? coursePeople : 0;
+      const order = Math.max(0, forecast * orderDays + courseAdd - remaining - del);
+      document.getElementById(`order_${idx}`).value = order;
     });
     saveCurrent();
   }
@@ -487,6 +601,7 @@
 
   // Init
   document.getElementById('datePicker').value = currentDate;
+  document.getElementById('coursePeople').addEventListener('input', updateCourseBadge);
   buildDayTabs();
   renderTable();
 
