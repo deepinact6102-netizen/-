@@ -11,104 +11,98 @@
       font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
       background: #1a1a1a;
       color: #f0e6d3;
-      padding: 24px;
+      padding: 20px;
       min-height: 100vh;
     }
 
-    .header {
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f5c842;
+      margin-bottom: 16px;
+    }
+
+    .nav-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-    }
-
-    .header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #f5c842;
-    }
-
-    .date-info {
-      font-size: 0.9rem;
-      color: #aaa;
-    }
-
-    .week-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
     }
 
-    .week-tab {
-      padding: 6px 14px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #ccc;
-      cursor: pointer;
+    .nav-bar label {
       font-size: 0.85rem;
-      transition: all 0.15s;
+      color: #aaa;
     }
 
-    .week-tab.active {
-      background: #f5c842;
-      color: #1a1a1a;
-      border-color: #f5c842;
-      font-weight: 700;
-    }
-
-    .week-tab:hover:not(.active) {
-      background: #333;
+    .nav-bar input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
       color: #f0e6d3;
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
     }
+
+    .nav-bar input[type="date"]:focus {
+      border-color: #f5c842;
+    }
+
+    .nav-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #f0e6d3;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+
+    .nav-btn:hover { background: #3a3a3a; }
+
+    .info-bar {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 14px;
+    }
+
+    .info-bar span { color: #f5c842; }
 
     .table-wrapper {
       overflow-x: auto;
       border-radius: 10px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
 
     table {
-      width: auto;
       border-collapse: collapse;
       background: #222;
-      min-width: 0;
     }
 
-    thead tr {
-      background: #2e2e2e;
-    }
+    thead tr { background: #2e2e2e; }
 
     thead th {
-      padding: 8px 10px;
+      padding: 9px 10px;
       text-align: center;
       font-size: 0.78rem;
       font-weight: 600;
       color: #f5c842;
-      letter-spacing: 0.03em;
       border-bottom: 2px solid #444;
       white-space: nowrap;
     }
 
-    thead th:first-child {
-      text-align: left;
-      width: 90px;
-    }
+    thead th:first-child { text-align: left; }
 
     tbody tr {
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #2e2e2e;
       transition: background 0.1s;
     }
 
-    tbody tr:hover {
-      background: #2a2a2a;
-    }
-
-    tbody tr:last-child {
-      border-bottom: none;
-    }
+    tbody tr:hover { background: #272727; }
+    tbody tr:last-child { border-bottom: none; }
 
     td {
       padding: 7px 8px;
@@ -119,16 +113,14 @@
     td.name {
       text-align: left;
       font-weight: 600;
-      font-size: 1rem;
-      color: #f0e6d3;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      padding-right: 14px;
     }
 
-    td.name .icon {
-      font-size: 1.1rem;
-    }
+    td.target { color: #888; font-size: 0.85rem; }
+
+    td.delivery-cell { color: #7ec8e3; font-size: 0.9rem; font-weight: 600; }
 
     td input[type="number"] {
       width: 52px;
@@ -145,98 +137,101 @@
     }
 
     td input[type="number"]::-webkit-outer-spin-button,
-    td input[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-    }
+    td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
     td input[type="number"]:focus {
       border-color: #f5c842;
       background: #252525;
     }
 
-    td.order-cell input[type="number"] {
+    td.forecast-cell input {
+      border-color: #5a8a5a;
+      color: #7dcf7d;
+    }
+
+    td.order-cell input {
       border-color: #f5c842;
       color: #f5c842;
       font-weight: 700;
       background: #1e1a00;
+      width: 58px;
     }
 
-    td.order-cell input[type="number"]:focus {
-      background: #252000;
+    td.order-cell input:focus { background: #252000; }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
     }
 
-    td.target {
-      color: #aaa;
-      font-size: 0.9rem;
-    }
-
-    .calc-btn {
-      margin-top: 20px;
-      padding: 10px 24px;
-      background: #f5c842;
-      color: #1a1a1a;
+    .btn {
+      padding: 9px 20px;
+      border-radius: 7px;
       border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s;
     }
 
-    .calc-btn:hover {
-      background: #ffd966;
-    }
+    .btn-primary { background: #f5c842; color: #1a1a1a; }
+    .btn-primary:hover { background: #ffd966; }
+
+    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
+    .btn-secondary:hover { background: #333; }
 
     .footer-note {
-      margin-top: 16px;
-      font-size: 0.78rem;
-      color: #666;
+      margin-top: 14px;
+      font-size: 0.76rem;
+      color: #555;
+      line-height: 1.6;
     }
-
-    .badge {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-left: 4px;
-    }
-
-    .badge.low { background: #e05252; }
-    .badge.ok  { background: #52c87a; }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>🍢 焼き鳥 発注表</h1>
-  <div class="date-info" id="dateInfo"></div>
+<h1>🍢 焼き鳥 発注表</h1>
+
+<div class="nav-bar">
+  <button class="nav-btn" onclick="moveDay(-1)">◀ 前日</button>
+  <div>
+    <label>日付</label>
+    <input type="date" id="datePicker" onchange="onDateChange()">
+  </div>
+  <button class="nav-btn" onclick="moveDay(1)">翌日 ▶</button>
 </div>
 
-<div class="week-tabs" id="weekTabs"></div>
+<div class="info-bar">
+  納品欄は <span id="deliveryFromLabel">—</span> の発注数を自動表示（中1日・変更不可）
+</div>
 
 <div class="table-wrapper">
   <table>
     <thead>
       <tr>
         <th>名称</th>
-        <th>1日目安（本）</th>
-        <th>納品（本）</th>
-        <th>残数（本）</th>
-        <th>予測数（本）</th>
-        <th>発注数（本）</th>
+        <th>1日目安</th>
+        <th>納品</th>
+        <th>残数</th>
+        <th>予測数</th>
+        <th>発注数</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 </div>
 
-<div style="display:flex; gap:12px; margin-top:20px; align-items:center;">
-  <button class="calc-btn" onclick="calcAll()">発注数を自動計算</button>
-  <button class="calc-btn" style="background:#333; color:#f0e6d3; border:1px solid #555;" onclick="clearDay()">この日をリセット</button>
+<div class="buttons">
+  <button class="btn btn-primary" onclick="calcAll()">発注数を自動計算</button>
+  <button class="btn btn-secondary" onclick="clearDay()">この日をリセット</button>
 </div>
 
 <div class="footer-note">
-  ※ 発注数の自動計算：予測数 ＋ 1日目安 − 残数（在庫補充分）
+  ※ 予測数：1日目安がデフォルト（手動で変更可）<br>
+  ※ 発注数の計算：max( 0, 予測数 − 残数 − 納品 )<br>
+  ※ 発注数は最終的に手動で調整してください
 </div>
 
 <script>
@@ -252,99 +247,128 @@
     { name: 'ささみ',   icon: '🍢', target: 30 },
   ];
 
-  const days = ['月', '火', '水', '木', '金', '土', '日'];
-  let currentDay = 0;
+  // dateKey: "YYYY-MM-DD"
+  // stored per date: { remaining: [], forecast: [], order: [] }  (arrays indexed by item)
 
-  // Storage key per day
-  const storageKey = (day, item, field) => `yakitori_d${day}_${item}_${field}`;
-
-  function getToday() {
-    const d = new Date();
-    return d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10);
   }
 
-  function buildTabs() {
-    const container = document.getElementById('weekTabs');
-    container.innerHTML = '';
-    days.forEach((label, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'week-tab' + (i === currentDay ? ' active' : '');
-      btn.textContent = label + '曜日';
-      btn.onclick = () => switchDay(i);
-      container.appendChild(btn);
-    });
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
   }
 
-  function switchDay(i) {
-    saveCurrentDay();
-    currentDay = i;
-    buildTabs();
+  function formatLabel(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+    return `${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+  }
+
+  function storageKey(dateStr) { return `yakitori_${dateStr}`; }
+
+  function loadDate(dateStr) {
+    const raw = localStorage.getItem(storageKey(dateStr));
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveDate(dateStr, data) {
+    localStorage.setItem(storageKey(dateStr), JSON.stringify(data));
+  }
+
+  function getCurrentData() {
+    const date = document.getElementById('datePicker').value;
+    const remaining = items.map((_, i) => parseInt(document.getElementById(`remaining_${i}`)?.value) || 0);
+    const forecast  = items.map((_, i) => parseInt(document.getElementById(`forecast_${i}`)?.value)  || 0);
+    const order     = items.map((_, i) => parseInt(document.getElementById(`order_${i}`)?.value)     || 0);
+    return { remaining, forecast, order };
+  }
+
+  function saveCurrent() {
+    const date = document.getElementById('datePicker').value;
+    if (!date) return;
+    saveDate(date, getCurrentData());
+  }
+
+  let currentDate = todayStr();
+
+  function onDateChange() {
+    currentDate = document.getElementById('datePicker').value;
     renderTable();
   }
 
-  function saveCurrentDay() {
-    items.forEach((item, idx) => {
-      ['delivery', 'remaining', 'forecast', 'order'].forEach(field => {
-        const el = document.getElementById(`${field}_${idx}`);
-        if (el) localStorage.setItem(storageKey(currentDay, idx, field), el.value);
-      });
-    });
+  function moveDay(n) {
+    saveCurrent();
+    currentDate = addDays(currentDate, n);
+    document.getElementById('datePicker').value = currentDate;
+    renderTable();
+  }
+
+  // 納品 = 発注数 from 2 days ago (中1日)
+  function getDelivery(dateStr) {
+    const fromDate = addDays(dateStr, -2);
+    const data = loadDate(fromDate);
+    return { values: data ? data.order : items.map(() => 0), fromDate };
   }
 
   function renderTable() {
+    saveCurrent();  // save before switching (if fields exist)
+
+    const date = currentDate;
+    const data = loadDate(date);
+    const { values: delivery, fromDate } = getDelivery(date);
+
+    // update info bar
+    document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate) + ' の発注数';
+
     const body = document.getElementById('tableBody');
     body.innerHTML = '';
 
     items.forEach((item, idx) => {
+      const remaining = data?.remaining[idx] ?? '';
+      // forecast default = target if not set
+      const forecast  = data ? data.forecast[idx] : item.target;
+      const order     = data?.order[idx] ?? '';
+      const del       = delivery[idx] || 0;
+
       const tr = document.createElement('tr');
-
-      const load = (field) => localStorage.getItem(storageKey(currentDay, idx, field)) || '';
-
       tr.innerHTML = `
-        <td class="name"><span class="icon">${item.icon}</span>${item.name}</td>
+        <td class="name">${item.icon} ${item.name}</td>
         <td class="target">${item.target}</td>
-        <td><input type="number" id="delivery_${idx}" min="0" value="${load('delivery')}" placeholder="0" oninput="autoCalc(${idx})"></td>
-        <td><input type="number" id="remaining_${idx}" min="0" value="${load('remaining')}" placeholder="0" oninput="autoCalc(${idx})"></td>
-        <td><input type="number" id="forecast_${idx}" min="0" value="${load('forecast')}" placeholder="0" oninput="autoCalc(${idx})"></td>
-        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${load('order')}" placeholder="—"></td>
+        <td class="delivery-cell">${del > 0 ? del : '—'}</td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="saveCurrent()"></td>
+        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}" oninput="saveCurrent()"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—" oninput="saveCurrent()"></td>
       `;
       body.appendChild(tr);
     });
   }
 
-  function autoCalc(idx) {
-    const target   = items[idx].target;
-    const delivery = parseInt(document.getElementById(`delivery_${idx}`).value)   || 0;
-    const remaining= parseInt(document.getElementById(`remaining_${idx}`).value)  || 0;
-    const forecast = parseInt(document.getElementById(`forecast_${idx}`).value)   || 0;
-
-    // 発注数 = 予測数 + 1日目安 - 残数 - 納品予定 (0以下なら0)
-    const order = Math.max(0, forecast + target - remaining - delivery);
-    document.getElementById(`order_${idx}`).value = order || '';
-  }
-
   function calcAll() {
-    items.forEach((_, idx) => autoCalc(idx));
+    items.forEach((item, idx) => {
+      const date = currentDate;
+      const { values: delivery } = getDelivery(date);
+      const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+      const forecast  = parseInt(document.getElementById(`forecast_${idx}`).value)  || item.target;
+      const del       = delivery[idx] || 0;
+      const order = Math.max(0, forecast - remaining - del);
+      document.getElementById(`order_${idx}`).value = order;
+    });
+    saveCurrent();
   }
 
   function clearDay() {
-    if (!confirm(`${days[currentDay]}曜日のデータをリセットしますか？`)) return;
-    items.forEach((_, idx) => {
-      ['delivery', 'remaining', 'forecast', 'order'].forEach(field => {
-        localStorage.removeItem(storageKey(currentDay, idx, field));
-        const el = document.getElementById(`${field}_${idx}`);
-        if (el) el.value = '';
-      });
-    });
+    if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
+    localStorage.removeItem(storageKey(currentDate));
+    renderTable();
   }
 
   // Init
-  document.getElementById('dateInfo').textContent = getToday();
-  buildTabs();
+  document.getElementById('datePicker').value = currentDate;
   renderTable();
 
-  // Auto-save on unload
-  window.addEventListener('beforeunload', saveCurrentDay);
+  window.addEventListener('beforeunload', saveCurrent);
 </script>
 </body>
 </html>
