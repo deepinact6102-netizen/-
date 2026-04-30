@@ -330,9 +330,11 @@
 <h1>🍢 焼き鳥 発注表</h1>
 
 <div class="week-nav">
-  <button class="nav-btn" onclick="moveWeek(-1)">◀ 前週</button>
+  <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
+  <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
   <input type="date" id="datePicker" onchange="onDateChange()">
-  <button class="nav-btn" onclick="moveWeek(1)">翌週 ▶</button>
+  <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
+  <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
 </div>
 
 <div class="day-tabs" id="dayTabs"></div>
@@ -493,6 +495,16 @@
   function moveWeek(n) {
     saveCurrent();
     currentDate = addDays(currentDate, n * 7);
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function moveMonth(n) {
+    saveCurrent();
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + n);
+    currentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     document.getElementById('datePicker').value = currentDate;
     buildDayTabs();
     renderTable();
