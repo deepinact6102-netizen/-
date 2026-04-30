@@ -21,54 +21,116 @@
       font-size: 1.1rem;
       font-weight: 700;
       color: #f5c842;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
-    .nav-bar {
+    /* 週ナビ */
+    .week-nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    .nav-bar input[type="date"] {
+    .week-nav input[type="date"] {
       flex: 1;
-      padding: 7px 8px;
+      padding: 6px 8px;
       border-radius: 6px;
       border: 1px solid #555;
       background: #2a2a2a;
       color: #f0e6d3;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       cursor: pointer;
       outline: none;
       text-align: center;
     }
 
-    .nav-bar input[type="date"]:focus { border-color: #f5c842; }
+    .week-nav input[type="date"]:focus { border-color: #f5c842; }
 
     .nav-btn {
-      padding: 7px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid #555;
       background: #2a2a2a;
       color: #f0e6d3;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       white-space: nowrap;
-      transition: background 0.15s;
     }
 
     .nav-btn:active { background: #444; }
 
-    .info-bar {
-      font-size: 0.72rem;
-      color: #777;
+    /* 曜日タブ */
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
       margin-bottom: 10px;
+    }
+
+    .day-tab {
+      padding: 5px 2px;
+      border-radius: 5px;
+      border: 1px solid #3a3a3a;
+      background: #252525;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.72rem;
+      text-align: center;
+      line-height: 1.4;
+      transition: background 0.12s;
+    }
+
+    .day-tab .wd { font-weight: 700; font-size: 0.78rem; }
+    .day-tab .md { font-size: 0.65rem; color: #666; }
+
+    .day-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+    }
+
+    .day-tab.active .md { color: #7a6200; }
+
+    .day-tab.has-data { border-color: #555; }
+    .day-tab.today .wd { text-decoration: underline; }
+    .day-tab:not(.active):active { background: #333; }
+
+    /* 日：赤、土：青 */
+    .day-tab.sun .wd { color: #e06060; }
+    .day-tab.sat .wd { color: #6090e0; }
+    .day-tab.active .wd { color: #1a1a1a; }
+
+    /* info */
+    .info-bar {
+      font-size: 0.7rem;
+      color: #777;
+      margin-bottom: 8px;
     }
 
     .info-bar span { color: #f5c842; }
 
+    /* 保存トースト */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: #2ecc71;
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: transform 0.25s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* テーブル */
     .table-wrapper {
       border-radius: 8px;
       overflow: hidden;
@@ -95,7 +157,6 @@
       overflow: hidden;
     }
 
-    /* 列幅固定 */
     th:nth-child(1), td:nth-child(1) { width: 22%; }
     th:nth-child(2), td:nth-child(2) { width: 10%; }
     th:nth-child(3), td:nth-child(3) { width: 10%; }
@@ -107,7 +168,6 @@
 
     tbody tr { border-bottom: 1px solid #2a2a2a; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:active { background: #2c2c2c; }
 
     td {
       padding: 6px 2px;
@@ -126,7 +186,6 @@
     }
 
     td.target { color: #888; font-size: 0.8rem; }
-
     td.delivery-cell { color: #7ec8e3; font-size: 0.85rem; font-weight: 600; }
 
     td input[type="number"] {
@@ -151,10 +210,7 @@
       background: #252525;
     }
 
-    td.forecast-cell input {
-      border-color: #5a8a5a;
-      color: #7dcf7d;
-    }
+    td.forecast-cell input { border-color: #5a8a5a; color: #7dcf7d; }
 
     td.order-cell input {
       border-color: #f5c842;
@@ -165,32 +221,35 @@
 
     td.order-cell input:focus { background: #252000; }
 
+    /* ボタン群 */
     .buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 12px;
     }
 
     .btn {
-      flex: 1;
-      padding: 11px 8px;
+      padding: 11px 4px;
       border-radius: 8px;
       border: none;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s;
     }
 
-    .btn-primary { background: #f5c842; color: #1a1a1a; }
-    .btn-primary:active { background: #ffd966; }
+    .btn-calc   { background: #f5c842; color: #1a1a1a; }
+    .btn-save   { background: #2ecc71; color: #fff; }
+    .btn-reset  { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
 
-    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
-    .btn-secondary:active { background: #333; }
+    .btn-calc:active  { background: #ffd966; }
+    .btn-save:active  { background: #27ae60; }
+    .btn-reset:active { background: #333; }
 
     .footer-note {
-      margin-top: 12px;
-      font-size: 0.7rem;
+      margin-top: 10px;
+      font-size: 0.68rem;
       color: #555;
       line-height: 1.7;
     }
@@ -200,17 +259,16 @@
 
 <h1>🍢 焼き鳥 発注表</h1>
 
-<div class="nav-bar">
-  <button class="nav-btn" onclick="moveDay(-1)">◀ 前日</button>
-  <div>
-    <label>日付</label>
-    <input type="date" id="datePicker" onchange="onDateChange()">
-  </div>
-  <button class="nav-btn" onclick="moveDay(1)">翌日 ▶</button>
+<div class="week-nav">
+  <button class="nav-btn" onclick="moveWeek(-1)">◀ 前週</button>
+  <input type="date" id="datePicker" onchange="onDateChange()">
+  <button class="nav-btn" onclick="moveWeek(1)">翌週 ▶</button>
 </div>
 
+<div class="day-tabs" id="dayTabs"></div>
+
 <div class="info-bar">
-  納品欄は <span id="deliveryFromLabel">—</span> の発注数を自動表示（中1日・変更不可）
+  納品欄は <span id="deliveryFromLabel">—</span> の発注数（中1日）
 </div>
 
 <div class="table-wrapper">
@@ -230,15 +288,17 @@
 </div>
 
 <div class="buttons">
-  <button class="btn btn-primary" onclick="calcAll()">発注数を自動計算</button>
-  <button class="btn btn-secondary" onclick="clearDay()">この日をリセット</button>
+  <button class="btn btn-calc" onclick="calcAll()">発注数を計算</button>
+  <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
+  <button class="btn btn-reset" onclick="clearDay()">リセット</button>
 </div>
 
 <div class="footer-note">
-  ※ 予測数：1日目安がデフォルト（手動で変更可）<br>
-  ※ 発注数の計算：max( 0, 予測数 − 残数 − 納品 )<br>
-  ※ 発注数は最終的に手動で調整してください
+  ※ 予測：1日目安がデフォルト（変更可）<br>
+  ※ 発注 ＝ max( 0, 予測 − 残数 − 納品 ）
 </div>
+
+<div class="toast" id="toast">保存しました</div>
 
 <script>
   const items = [
@@ -253,23 +313,31 @@
     { name: 'ささみ',   icon: '🍢', target: 30 },
   ];
 
-  // dateKey: "YYYY-MM-DD"
-  // stored per date: { remaining: [], forecast: [], order: [] }  (arrays indexed by item)
+  const WD = ['日','月','火','水','木','金','土'];
 
   function todayStr() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
   function addDays(dateStr, n) {
     const d = new Date(dateStr + 'T00:00:00');
     d.setDate(d.getDate() + n);
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
   function formatLabel(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
-    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
-    return `${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+    return `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+  }
+
+  // 週の月曜日を返す
+  function getMondayOf(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0=日
+    const diff = (day === 0) ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
   function storageKey(dateStr) { return `yakitori_${dateStr}`; }
@@ -284,7 +352,6 @@
   }
 
   function getCurrentData() {
-    const date = document.getElementById('datePicker').value;
     const remaining = items.map((_, i) => parseInt(document.getElementById(`remaining_${i}`)?.value) || 0);
     const forecast  = items.map((_, i) => parseInt(document.getElementById(`forecast_${i}`)?.value)  || 0);
     const order     = items.map((_, i) => parseInt(document.getElementById(`order_${i}`)?.value)     || 0);
@@ -292,26 +359,79 @@
   }
 
   function saveCurrent() {
-    const date = document.getElementById('datePicker').value;
-    if (!date) return;
-    saveDate(date, getCurrentData());
+    if (!currentDate) return;
+    saveDate(currentDate, getCurrentData());
+  }
+
+  function saveManual() {
+    saveCurrent();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    buildDayTabs(); // データありマーク更新
   }
 
   let currentDate = todayStr();
 
   function onDateChange() {
-    currentDate = document.getElementById('datePicker').value;
-    renderTable();
-  }
-
-  function moveDay(n) {
     saveCurrent();
-    currentDate = addDays(currentDate, n);
-    document.getElementById('datePicker').value = currentDate;
+    currentDate = document.getElementById('datePicker').value;
+    buildDayTabs();
     renderTable();
   }
 
-  // 納品 = 発注数 from 2 days ago (中1日)
+  function moveWeek(n) {
+    saveCurrent();
+    currentDate = addDays(currentDate, n * 7);
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function switchDay(dateStr) {
+    saveCurrent();
+    currentDate = dateStr;
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  // 月〜日の7タブを構築（月曜始まり）
+  function buildDayTabs() {
+    const monday = getMondayOf(currentDate);
+    const today  = todayStr();
+    const container = document.getElementById('dayTabs');
+    container.innerHTML = '';
+
+    // 月火水木金土日 の順
+    const order = [0,1,2,3,4,5,6]; // 月曜から
+    order.forEach(i => {
+      const dateStr = addDays(monday, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const wdIdx = d.getDay(); // 0=日
+      const wdName = WD[wdIdx];
+      const mm = d.getMonth() + 1;
+      const dd = d.getDate();
+
+      const hasData = !!localStorage.getItem(storageKey(dateStr));
+      const isActive = dateStr === currentDate;
+      const isToday  = dateStr === today;
+
+      let cls = 'day-tab';
+      if (isActive)  cls += ' active';
+      if (hasData)   cls += ' has-data';
+      if (isToday)   cls += ' today';
+      if (wdIdx === 0) cls += ' sun';
+      if (wdIdx === 6) cls += ' sat';
+
+      const btn = document.createElement('button');
+      btn.className = cls;
+      btn.innerHTML = `<div class="wd">${wdName}</div><div class="md">${mm}/${dd}</div>`;
+      btn.onclick = () => switchDay(dateStr);
+      container.appendChild(btn);
+    });
+  }
+
   function getDelivery(dateStr) {
     const fromDate = addDays(dateStr, -2);
     const data = loadDate(fromDate);
@@ -319,21 +439,17 @@
   }
 
   function renderTable() {
-    saveCurrent();  // save before switching (if fields exist)
-
     const date = currentDate;
     const data = loadDate(date);
     const { values: delivery, fromDate } = getDelivery(date);
 
-    // update info bar
-    document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate) + ' の発注数';
+    document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate);
 
     const body = document.getElementById('tableBody');
     body.innerHTML = '';
 
     items.forEach((item, idx) => {
       const remaining = data?.remaining[idx] ?? '';
-      // forecast default = target if not set
       const forecast  = data ? data.forecast[idx] : item.target;
       const order     = data?.order[idx] ?? '';
       const del       = delivery[idx] || 0;
@@ -343,9 +459,9 @@
         <td class="name">${item.icon} ${item.name}</td>
         <td class="target">${item.target}</td>
         <td class="delivery-cell">${del > 0 ? del : '—'}</td>
-        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="saveCurrent()"></td>
-        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}" oninput="saveCurrent()"></td>
-        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—" oninput="saveCurrent()"></td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0"></td>
+        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
       `;
       body.appendChild(tr);
     });
@@ -353,13 +469,11 @@
 
   function calcAll() {
     items.forEach((item, idx) => {
-      const date = currentDate;
-      const { values: delivery } = getDelivery(date);
+      const { values: delivery } = getDelivery(currentDate);
       const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
       const forecast  = parseInt(document.getElementById(`forecast_${idx}`).value)  || item.target;
       const del       = delivery[idx] || 0;
-      const order = Math.max(0, forecast - remaining - del);
-      document.getElementById(`order_${idx}`).value = order;
+      document.getElementById(`order_${idx}`).value = Math.max(0, forecast - remaining - del);
     });
     saveCurrent();
   }
@@ -367,11 +481,13 @@
   function clearDay() {
     if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
     localStorage.removeItem(storageKey(currentDate));
+    buildDayTabs();
     renderTable();
   }
 
   // Init
   document.getElementById('datePicker').value = currentDate;
+  buildDayTabs();
   renderTable();
 
   window.addEventListener('beforeunload', saveCurrent);
