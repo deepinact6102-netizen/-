@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>焼き鳥 発注表</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="発注表">
+  <meta name="theme-color" content="#f5c842">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      padding: 12px;
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f5c842;
+      margin-bottom: 10px;
+    }
+
+    /* 週ナビ */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .week-nav input[type="date"] {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #f0e6d3;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+      text-align: center;
+    }
+
+    .week-nav input[type="date"]:focus { border-color: #f5c842; }
+
+    .nav-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #f0e6d3;
+      cursor: pointer;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .nav-btn:active { background: #444; }
+
+    /* 曜日タブ */
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      margin-bottom: 10px;
+    }
+
+    .day-tab {
+      padding: 5px 2px;
+      border-radius: 5px;
+      border: 1px solid #3a3a3a;
+      background: #252525;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.72rem;
+      text-align: center;
+      line-height: 1.4;
+      transition: background 0.12s;
+    }
+
+    .day-tab .wd { font-weight: 700; font-size: 0.78rem; }
+    .day-tab .md { font-size: 0.65rem; color: #666; }
+
+    .day-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+    }
+
+    .day-tab.active .md { color: #7a6200; }
+
+    .day-tab.has-data { border-color: #555; }
+    .day-tab.today .wd { text-decoration: underline; }
+    .day-tab:not(.active):active { background: #333; }
+
+    /* 日：赤、土：青 */
+    .day-tab.sun .wd { color: #e06060; }
+    .day-tab.sat .wd { color: #6090e0; }
+    .day-tab.active .wd { color: #1a1a1a; }
+
+    /* info */
+    .info-bar {
+      font-size: 0.7rem;
+      color: #777;
+      margin-bottom: 8px;
+    }
+
+    .info-bar span { color: #f5c842; }
+
+    /* 保存トースト */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: #2ecc71;
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: transform 0.25s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* テーブル */
+    .table-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    table {
+      border-collapse: collapse;
+      background: #222;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    thead tr { background: #2e2e2e; }
+
+    thead th {
+      padding: 7px 4px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #f5c842;
+      border-bottom: 2px solid #444;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    th:nth-child(1), td:nth-child(1) { width: 22%; }
+    th:nth-child(2), td:nth-child(2) { width: 10%; }
+    th:nth-child(3), td:nth-child(3) { width: 10%; }
+    th:nth-child(4), td:nth-child(4) { width: 16%; }
+    th:nth-child(5), td:nth-child(5) { width: 16%; }
+    th:nth-child(6), td:nth-child(6) { width: 16%; }
+
+    thead th:first-child { text-align: left; padding-left: 8px; }
+
+    tbody tr { border-bottom: 1px solid #2a2a2a; }
+    tbody tr:last-child { border-bottom: none; }
+
+    td {
+      padding: 6px 2px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    td.name {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding-left: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td.target { color: #888; font-size: 0.8rem; }
+    td.delivery-cell { color: #7ec8e3; font-size: 0.85rem; font-weight: 600; }
+
+    td input[type="number"] {
+      width: 100%;
+      max-width: 52px;
+      padding: 5px 2px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.85rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    td input[type="number"]::-webkit-outer-spin-button,
+    td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    td input[type="number"]:focus {
+      border-color: #f5c842;
+      background: #252525;
+    }
+
+    td.forecast-cell input { border-color: #5a8a5a; color: #7dcf7d; }
+
+    td.order-cell input {
+      border-color: #f5c842;
+      color: #f5c842;
+      font-weight: 700;
+      background: #1e1a00;
+    }
+
+    td.order-cell input:focus { background: #252000; }
+
+    /* ボタン群 */
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 11px 4px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-calc   { background: #f5c842; color: #1a1a1a; }
+    .btn-save   { background: #2ecc71; color: #fff; }
+    .btn-reset  { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
+
+    .btn-calc:active  { background: #ffd966; }
+    .btn-save:active  { background: #27ae60; }
+    .btn-reset:active { background: #333; }
+
+    /* オプションパネル */
+    .options-panel {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #252525;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .option-label {
+      font-size: 0.72rem;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .day-toggle {
+      display: flex;
+      gap: 3px;
+    }
+
+    .day-toggle button {
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #aaa;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .day-toggle button.active {
+      background: #e07020;
+      color: #fff;
+      border-color: #e07020;
+    }
+
+    .course-input {
+      width: 52px;
+      padding: 4px 4px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.85rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .course-input::-webkit-outer-spin-button,
+    .course-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .course-input:focus { border-color: #a070f0; }
+
+    .course-badge {
+      font-size: 0.68rem;
+      color: #a070f0;
+      white-space: nowrap;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: #555;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🍢 焼き鳥 発注表</h1>
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
+  <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
+  <input type="date" id="datePicker" onchange="onDateChange()">
+  <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
+  <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
+</div>
+
+<div class="day-tabs" id="dayTabs"></div>
+
+<div class="info-bar">
+  納品欄は <span id="deliveryFromLabel">—</span> の発注数（中1日）
+</div>
+
+<!-- 注文日数 & コース人数 -->
+<div class="options-panel">
+  <div class="option-group">
+    <span class="option-label">注文日数</span>
+    <div class="day-toggle">
+      <button id="days1" class="active" onclick="setOrderDays(1)">1日</button>
+      <button id="days2" onclick="setOrderDays(2)">2日</button>
+      <button id="days3" onclick="setOrderDays(3)">3日</button>
+    </div>
+  </div>
+  <div class="option-group">
+    <span class="option-label">コース人数</span>
+    <input type="number" class="course-input" id="coursePeople" min="0" value="0" placeholder="0">
+    <span class="option-label">人</span>
+  </div>
+  <span class="course-badge" id="courseBadge"></span>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>名称</th>
+        <th>目安</th>
+        <th>納品</th>
+        <th>残数</th>
+        <th>予測</th>
+        <th>発注</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="buttons">
+  <button class="btn btn-calc" onclick="calcAll()">発注数を計算</button>
+  <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
+  <button class="btn btn-reset" onclick="clearDay()">リセット</button>
+</div>
+
+<div class="footer-note">
+  ※ 予測：1日目安がデフォルト（変更可）<br>
+  ※ 発注 ＝ max( 0, 予測×日数 ＋ コース人数 − 残数 − 納品 ）<br>
+  ※ コース加算対象：ねぎま・ハツ・ささみ
+</div>
+
+<div class="toast" id="toast">保存しました</div>
+
+<script>
+  const items = [
+    { name: 'ねぎま',   icon: '🍢', target: 30, course: true  },
+    { name: 'むね',     icon: '🍗', target: 10, course: false },
+    { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
+    { name: 'せせり',   icon: '🍢', target: 15, course: false },
+    { name: 'ハツ',     icon: '❤️', target: 30, course: true  },
+    { name: 'レバー',   icon: '🫀', target: 10, course: false, fixedDelivery: 10 },
+    { name: 'とり皮',   icon: '🍢', target: 15, course: false },
+    { name: '砂肝',    icon: '🍢', target: 15, course: false },
+    { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
+  ];
+
+  let orderDays = 1;
+
+  function setOrderDays(n) {
+    orderDays = n;
+    [1,2,3].forEach(i => {
+      document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
+    });
+    updateCourseBadge();
+  }
+
+  function updateCourseBadge() {
+    const people = parseInt(document.getElementById('coursePeople')?.value) || 0;
+    const badge = document.getElementById('courseBadge');
+    if (!badge) return;
+    if (people > 0) {
+      badge.textContent = `ねぎま・ハツ・ささみ +${people}本`;
+    } else {
+      badge.textContent = '';
+    }
+  }
+
+  const WD = ['日','月','火','水','木','金','土'];
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function formatLabel(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+  }
+
+  // 週の月曜日を返す
+  function getMondayOf(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0=日
+    const diff = (day === 0) ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function storageKey(dateStr) { return `yakitori_${dateStr}`; }
+
+  function loadDate(dateStr) {
+    const raw = localStorage.getItem(storageKey(dateStr));
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveDate(dateStr, data) {
+    localStorage.setItem(storageKey(dateStr), JSON.stringify(data));
+  }
+
+  function getCurrentData() {
+    const remaining = items.map((_, i) => parseInt(document.getElementById(`remaining_${i}`)?.value) || 0);
+    const forecast  = items.map((_, i) => parseInt(document.getElementById(`forecast_${i}`)?.value)  || 0);
+    const order     = items.map((_, i) => parseInt(document.getElementById(`order_${i}`)?.value)     || 0);
+    return { remaining, forecast, order };
+  }
+
+  function saveCurrent() {
+    if (!currentDate) return;
+    saveDate(currentDate, getCurrentData());
+  }
+
+  function saveManual() {
+    saveCurrent();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    buildDayTabs(); // データありマーク更新
+  }
+
+  let currentDate = todayStr();
+
+  function onDateChange() {
+    saveCurrent();
+    currentDate = document.getElementById('datePicker').value;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function moveWeek(n) {
+    saveCurrent();
+    currentDate = addDays(currentDate, n * 7);
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function moveMonth(n) {
+    saveCurrent();
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + n);
+    currentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function switchDay(dateStr) {
+    saveCurrent();
+    currentDate = dateStr;
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  // 月〜日の7タブを構築（月曜始まり）
+  function buildDayTabs() {
+    const monday = getMondayOf(currentDate);
+    const today  = todayStr();
+    const container = document.getElementById('dayTabs');
+    container.innerHTML = '';
+
+    // 月火水木金土日 の順
+    const order = [0,1,2,3,4,5,6]; // 月曜から
+    order.forEach(i => {
+      const dateStr = addDays(monday, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const wdIdx = d.getDay(); // 0=日
+      const wdName = WD[wdIdx];
+      const mm = d.getMonth() + 1;
+      const dd = d.getDate();
+
+      const hasData = !!localStorage.getItem(storageKey(dateStr));
+      const isActive = dateStr === currentDate;
+      const isToday  = dateStr === today;
+
+      let cls = 'day-tab';
+      if (isActive)  cls += ' active';
+      if (hasData)   cls += ' has-data';
+      if (isToday)   cls += ' today';
+      if (wdIdx === 0) cls += ' sun';
+      if (wdIdx === 6) cls += ' sat';
+
+      const btn = document.createElement('button');
+      btn.className = cls;
+      btn.innerHTML = `<div class="wd">${wdName}</div><div class="md">${mm}/${dd}</div>`;
+      btn.onclick = () => switchDay(dateStr);
+      container.appendChild(btn);
+    });
+  }
+
+  function getDelivery(dateStr) {
+    const fromDate = addDays(dateStr, -2);
+    const data = loadDate(fromDate);
+    return { values: data ? data.order : items.map(() => 0), fromDate };
+  }
+
+  function renderTable() {
+    const date = currentDate;
+    const data = loadDate(date);
+    const { values: delivery, fromDate } = getDelivery(date);
+
+    document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate);
+
+    const body = document.getElementById('tableBody');
+    body.innerHTML = '';
+
+    items.forEach((item, idx) => {
+      const remaining = data?.remaining[idx] ?? '';
+      const forecast  = data ? data.forecast[idx] : item.target;
+      const order     = data?.order[idx] ?? '';
+      const del = item.fixedDelivery ?? (delivery[idx] || 0);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="name">${item.icon} ${item.name}</td>
+        <td class="target">${item.target}</td>
+        <td class="delivery-cell">${del > 0 ? del : '—'}</td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0"></td>
+        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function calcAll() {
+    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
+    const { values: delivery } = getDelivery(currentDate);
+
+    items.forEach((item, idx) => {
+      const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+      const forecast  = parseInt(document.getElementById(`forecast_${idx}`).value)  || item.target;
+      const del       = item.fixedDelivery ?? (delivery[idx] || 0);
+      const courseAdd = item.course ? coursePeople : 0;
+      const order = Math.max(0, forecast * orderDays + courseAdd - remaining - del);
+      document.getElementById(`order_${idx}`).value = order;
+    });
+    saveCurrent();
+  }
+
+  function clearDay() {
+    if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
+    localStorage.removeItem(storageKey(currentDate));
+    buildDayTabs();
+    renderTable();
+  }
+
+  // Init
+  document.getElementById('datePicker').value = currentDate;
+  document.getElementById('coursePeople').addEventListener('input', updateCourseBadge);
+  buildDayTabs();
+  renderTable();
+
+  window.addEventListener('beforeunload', saveCurrent);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+</body>
+</html>
