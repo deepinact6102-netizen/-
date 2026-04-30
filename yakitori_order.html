@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>焼き鳥 発注表</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="発注表">
+  <meta name="theme-color" content="#f5c842">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -618,6 +624,10 @@
   renderTable();
 
   window.addEventListener('beforeunload', saveCurrent);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
 </script>
 </body>
 </html>
