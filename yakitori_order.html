@@ -518,8 +518,7 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測 ＝ 残数 ＋ 翌日の納品数 − 1日目安（翌日の残数予測）<br>
-  ※ 発注 ＝ 1日目安 × 注文日数 ＋ コース人数<br>
+  ※ 予測 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)<br>
   ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
@@ -745,11 +744,14 @@
 
   function calcForecast(idx) {
     const item = items[idx];
-    const remaining   = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
-    // 予測 = 残数 + 翌日の納品数 - 1日目安（翌日の残数予測）
-    const fixedDel    = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
-    const tomorrowDel = fixedDel ?? getTomorrowDelivery(idx) ?? item.target;
-    return remaining + tomorrowDel - item.target;
+    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
+    const courseAdd    = item.course ? coursePeople : 0;
+    const remaining    = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+    const fixedDel     = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
+    const tomorrowDel  = fixedDel ?? getTomorrowDelivery(idx) ?? item.target;
+    const need         = item.target * orderDays + courseAdd;
+    const available    = remaining + tomorrowDel - item.target;
+    return need - available;
   }
 
   function calcOrder(idx) {
