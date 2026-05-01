@@ -545,17 +545,15 @@
       document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
     });
     updateCourseBadge();
+    calcAll();
   }
 
   function updateCourseBadge() {
     const people = parseInt(document.getElementById('coursePeople')?.value) || 0;
     const badge = document.getElementById('courseBadge');
     if (!badge) return;
-    if (people > 0) {
-      badge.textContent = `ねぎま・ハツ・ささみ +${people}本`;
-    } else {
-      badge.textContent = '';
-    }
+    badge.textContent = people > 0 ? `ねぎま・ハツ・ささみ +${people}本` : '';
+    calcAll();
   }
 
   const WD = ['日','月','火','水','木','金','土'];
@@ -769,7 +767,13 @@
   }
 
   function calcAll() {
-    items.forEach((_, idx) => {
+    items.forEach((item, idx) => {
+      // 固定納品の品目は日数に連動して納品欄を更新
+      if (item.fixedDeliveryPerDay != null) {
+        const delEl = document.getElementById(`delivery_${idx}`);
+        if (delEl) delEl.value = item.fixedDeliveryPerDay * orderDays;
+        updateStock(idx);
+      }
       const forecast = calcForecast(idx);
       document.getElementById(`forecast_${idx}`).value = forecast;
       document.getElementById(`order_${idx}`).value = forecast;
