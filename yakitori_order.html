@@ -518,7 +518,7 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測 ＝ 残数 ＋ 翌日の納品数 − （1日目安 × 注文日数 ＋ コース人数）<br>
+  ※ 予測 ＝ 残数 ＋ 翌日の納品数 − （1日目安 × 注文日数 ＋ コース人数）＋ 1日目安<br>
   ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
@@ -750,7 +750,7 @@
     // 固定納品品目は日数×固定値、それ以外は翌日データ or 需要量
     const fixedDel    = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
     const tomorrowDel = fixedDel ?? getTomorrowDelivery(idx) ?? demand;
-    return remaining + tomorrowDel - demand;
+    return remaining + tomorrowDel - demand + item.target;
   }
 
   function updateForecast(idx) {
