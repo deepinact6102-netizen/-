@@ -481,7 +481,7 @@
         <th>納品</th>
         <th>在庫数</th>
         <th>残数</th>
-        <th>予測</th>
+        <th>予想</th>
         <th>発注</th>
       </tr>
     </thead>
@@ -490,7 +490,7 @@
 </div>
 
 <div class="buttons">
-  <button class="btn btn-calc" onclick="calcAll()">予測数を計算</button>
+  <button class="btn btn-calc" onclick="calcAll()">予想数を計算</button>
   <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
   <button class="btn btn-reset" onclick="clearDay()">リセット</button>
 </div>
@@ -518,8 +518,8 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)<br>
-  ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
+  ※ 予想 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)<br>
+  ※ 発注数は予想数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
 <div class="toast" id="toast">保存しました</div>
@@ -763,12 +763,15 @@
   }
 
   function updateForecast(idx) {
-    document.getElementById(`forecast_${idx}`).value = calcForecast(idx);
-    document.getElementById(`order_${idx}`).value = calcOrder(idx);
+    const val = calcForecast(idx);
+    document.getElementById(`forecast_${idx}`).value = val;
+    document.getElementById(`order_${idx}`).value = val;
     saveCurrent();
   }
 
   function syncOrder(idx) {
+    const val = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
+    document.getElementById(`order_${idx}`).value = val;
     saveCurrent();
   }
 
@@ -779,8 +782,9 @@
         if (delEl) delEl.value = item.fixedDeliveryPerDay * orderDays;
         updateStock(idx);
       }
-      document.getElementById(`forecast_${idx}`).value = calcForecast(idx);
-      document.getElementById(`order_${idx}`).value = calcOrder(idx);
+      const fval = calcForecast(idx);
+      document.getElementById(`forecast_${idx}`).value = fval;
+      document.getElementById(`order_${idx}`).value = fval;
     });
     saveCurrent();
   }
