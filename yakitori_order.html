@@ -163,9 +163,9 @@
       overflow: hidden;
     }
 
-    th:nth-child(1), td:nth-child(1) { width: 22%; }
-    th:nth-child(2), td:nth-child(2) { width: 10%; }
-    th:nth-child(3), td:nth-child(3) { width: 10%; }
+    th:nth-child(1), td:nth-child(1) { width: 30%; }
+    th:nth-child(2), td:nth-child(2) { width: 11%; }
+    th:nth-child(3), td:nth-child(3) { width: 11%; }
     th:nth-child(4), td:nth-child(4) { width: 16%; }
     th:nth-child(5), td:nth-child(5) { width: 16%; }
     th:nth-child(6), td:nth-child(6) { width: 16%; }
@@ -193,6 +193,8 @@
 
     td.target { color: #888; font-size: 0.8rem; }
     td.delivery-cell { color: #7ec8e3; font-size: 0.85rem; font-weight: 600; }
+    td.stock-cell { color: #e8a44a; font-size: 0.85rem; font-weight: 600; }
+    .item-target { color: #666; font-size: 0.72rem; font-weight: 400; }
 
     td input[type="number"] {
       width: 100%;
@@ -472,9 +474,9 @@
   <table>
     <thead>
       <tr>
-        <th>名称</th>
-        <th>目安</th>
+        <th>名称（目安）</th>
         <th>納品</th>
+        <th>在庫数</th>
         <th>残数</th>
         <th>予測</th>
         <th>発注</th>
@@ -691,6 +693,7 @@
   function renderTable() {
     const date = currentDate;
     const data = loadDate(date);
+    const prevData = loadDate(addDays(date, -1));
     const { values: delivery, fromDate } = getDelivery(date);
 
     document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate);
@@ -699,16 +702,18 @@
     body.innerHTML = '';
 
     items.forEach((item, idx) => {
-      const remaining = data?.remaining[idx] ?? '';
-      const forecast  = data ? data.forecast[idx] : item.target;
-      const order     = data?.order[idx] ?? '';
-      const del = item.fixedDelivery ?? (delivery[idx] || 0);
+      const remaining    = data?.remaining[idx] ?? '';
+      const forecast     = data ? data.forecast[idx] : item.target;
+      const order        = data?.order[idx] ?? '';
+      const del          = item.fixedDelivery ?? (delivery[idx] || 0);
+      const prevRemaining = prevData?.remaining[idx] || 0;
+      const stock        = del + prevRemaining;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="name">${item.icon} ${item.name}</td>
-        <td class="target">${item.target}</td>
+        <td class="name">${item.icon} ${item.name} <span class="item-target">(${item.target})</span></td>
         <td class="delivery-cell">${del > 0 ? del : '—'}</td>
+        <td class="stock-cell">${stock > 0 ? stock : '—'}</td>
         <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0"></td>
         <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}"></td>
         <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
