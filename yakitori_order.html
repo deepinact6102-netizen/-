@@ -518,7 +518,8 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測 ＝ 残数 ＋ 翌日の納品数 ＋ コース人数<br>
+  ※ 予測 ＝ 残数 ＋ 翌日の納品数 − 1日目安（翌日の残数予測）<br>
+  ※ 発注 ＝ 1日目安 × 注文日数 ＋ コース人数<br>
   ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
@@ -744,40 +745,40 @@
 
   function calcForecast(idx) {
     const item = items[idx];
+    const remaining   = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+    // 予測 = 残数 + 翌日の納品数 - 1日目安（翌日の残数予測）
+    const fixedDel    = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
+    const tomorrowDel = fixedDel ?? getTomorrowDelivery(idx) ?? item.target;
+    return remaining + tomorrowDel - item.target;
+  }
+
+  function calcOrder(idx) {
+    const item = items[idx];
     const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
     const courseAdd = item.course ? coursePeople : 0;
-    const remaining   = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
-    const demand      = item.target * orderDays + courseAdd;
-    // 固定納品品目は日数×固定値、それ以外は翌日データ or 需要量
-    const fixedDel    = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
-    const tomorrowDel = fixedDel ?? getTomorrowDelivery(idx) ?? demand;
-    return remaining + tomorrowDel + courseAdd;
+    // 発注数 = 1日目安 × 注文日数 + コース人数
+    return item.target * orderDays + courseAdd;
   }
 
   function updateForecast(idx) {
-    const forecast = calcForecast(idx);
-    document.getElementById(`forecast_${idx}`).value = forecast;
-    document.getElementById(`order_${idx}`).value = forecast;
+    document.getElementById(`forecast_${idx}`).value = calcForecast(idx);
+    document.getElementById(`order_${idx}`).value = calcOrder(idx);
     saveCurrent();
   }
 
   function syncOrder(idx) {
-    const forecast = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
-    document.getElementById(`order_${idx}`).value = forecast;
     saveCurrent();
   }
 
   function calcAll() {
     items.forEach((item, idx) => {
-      // 固定納品の品目は日数に連動して納品欄を更新
       if (item.fixedDeliveryPerDay != null) {
         const delEl = document.getElementById(`delivery_${idx}`);
         if (delEl) delEl.value = item.fixedDeliveryPerDay * orderDays;
         updateStock(idx);
       }
-      const forecast = calcForecast(idx);
-      document.getElementById(`forecast_${idx}`).value = forecast;
-      document.getElementById(`order_${idx}`).value = forecast;
+      document.getElementById(`forecast_${idx}`).value = calcForecast(idx);
+      document.getElementById(`order_${idx}`).value = calcOrder(idx);
     });
     saveCurrent();
   }
