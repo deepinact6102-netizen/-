@@ -531,7 +531,7 @@
     { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
     { name: 'せせり',   icon: '🍢', target: 15, course: false },
     { name: 'ハツ',     icon: '❤️', target: 30, course: true  },
-    { name: 'レバー',   icon: '🫀', target: 10, course: false, fixedDelivery: 10 },
+    { name: 'レバー',   icon: '🫀', target: 10, course: false, fixedDeliveryPerDay: 10 },
     { name: 'とり皮',   icon: '🍢', target: 15, course: false },
     { name: '砂肝',    icon: '🍢', target: 15, course: false },
     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
@@ -710,7 +710,7 @@
       const remaining     = data?.remaining[idx] ?? '';
       const forecast      = data ? data.forecast[idx] : item.target;
       const order         = data?.order[idx] ?? '';
-      const autoDelivery  = item.fixedDelivery ?? (delivery[idx] || 0);
+      const autoDelivery  = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : (delivery[idx] || 0);
       const delVal        = data?.delivery?.[idx] != null ? data.delivery[idx] : autoDelivery;
       const prevRemaining = prevData?.remaining[idx] || 0;
       const autoStock     = delVal + prevRemaining;
@@ -749,7 +749,9 @@
     const courseAdd = item.course ? coursePeople : 0;
     const remaining   = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
     const demand      = item.target * orderDays + courseAdd;
-    const tomorrowDel = getTomorrowDelivery(idx) ?? demand;
+    // 固定納品品目は日数×固定値、それ以外は翌日データ or 需要量
+    const fixedDel    = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
+    const tomorrowDel = fixedDel ?? getTomorrowDelivery(idx) ?? demand;
     return remaining + tomorrowDel - demand;
   }
 
