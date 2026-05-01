@@ -485,16 +485,18 @@
 </div>
 
 <div class="buttons">
-  <button class="btn btn-calc" onclick="calcAll()">発注数を計算</button>
+  <button class="btn btn-calc" onclick="calcAll()">予測数を計算</button>
   <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
   <button class="btn btn-reset" onclick="clearDay()">リセット</button>
 </div>
-<div style="margin-top:8px;">
-  <button class="btn btn-camera" style="width:100%;padding:11px;" onclick="openCamera()">📷 残数を写真から読み取る</button>
+<div style="margin-top:8px;display:flex;gap:6px;">
+  <button class="btn btn-camera" style="flex:1;padding:11px;" onclick="openCamera()">📷 カメラで撮影</button>
+  <button class="btn btn-camera" style="flex:1;padding:11px;background:#6a5acd;" onclick="openGallery()">🖼️ 写真から選ぶ</button>
 </div>
 
 <!-- カメラ入力（非表示） -->
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageCapture(this)">
+<input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="handleImageCapture(this)">
 
 <!-- OCRモーダル -->
 <div class="ocr-overlay" id="ocrOverlay">
@@ -511,9 +513,8 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測：1日目安がデフォルト（変更可）<br>
-  ※ 発注 ＝ max( 0, 予測×日数 ＋ コース人数 − 残数 − 納品 ）<br>
-  ※ コース加算対象：ねぎま・ハツ・ささみ
+  ※ 予測 ＝ 1日目安 × 注文日数 ＋ コース人数（ねぎま・ハツ・ささみ）<br>
+  ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
 <div class="toast" id="toast">保存しました</div>
@@ -718,15 +719,12 @@
 
   function calcAll() {
     const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
-    const { values: delivery } = getDelivery(currentDate);
 
     items.forEach((item, idx) => {
-      const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
-      const forecast  = parseInt(document.getElementById(`forecast_${idx}`).value)  || item.target;
-      const del       = item.fixedDelivery ?? (delivery[idx] || 0);
       const courseAdd = item.course ? coursePeople : 0;
-      const order = Math.max(0, forecast * orderDays + courseAdd - remaining - del);
-      document.getElementById(`order_${idx}`).value = order;
+      const forecast  = item.target * orderDays + courseAdd;
+      document.getElementById(`forecast_${idx}`).value = forecast;
+      document.getElementById(`order_${idx}`).value = forecast;
     });
     saveCurrent();
   }
@@ -755,6 +753,11 @@
   function openCamera() {
     document.getElementById('cameraInput').value = '';
     document.getElementById('cameraInput').click();
+  }
+
+  function openGallery() {
+    document.getElementById('galleryInput').value = '';
+    document.getElementById('galleryInput').click();
   }
 
   async function handleImageCapture(input) {
