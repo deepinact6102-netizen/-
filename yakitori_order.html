@@ -721,7 +721,7 @@
         <td class="stock-cell"><input type="number" id="stock_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
         <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="updateForecast(${idx})"></td>
         <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}" oninput="syncOrder(${idx})"></td>
-        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—" oninput="onOrderChange()"></td>
       `;
       body.appendChild(tr);
     });
@@ -772,7 +772,20 @@
   function syncOrder(idx) {
     const val = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
     document.getElementById(`order_${idx}`).value = val;
+    onOrderChange();
+  }
+
+  function onOrderChange() {
     saveCurrent();
+    // 納品日（2日後）の納品欄を即時更新
+    const deliveryDate = addDays(currentDate, 2);
+    const deliveryData = loadDate(deliveryDate);
+    if (deliveryData) {
+      // 納品日のデータが存在すれば delivery を今日の order で上書き保存
+      const todayData = getCurrentData();
+      deliveryData.delivery = todayData.order;
+      saveDate(deliveryDate, deliveryData);
+    }
   }
 
   function calcAll() {
