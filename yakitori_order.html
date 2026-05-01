@@ -513,7 +513,7 @@
 </div>
 
 <div class="footer-note">
-  ※ 予測 ＝ 1日目安 × 注文日数 ＋ コース人数（ねぎま・ハツ・ささみ）<br>
+  ※ 予測 ＝ 1日目安 × 注文日数 ＋ コース人数 ＋ 残数<br>
   ※ 発注数は予測数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
@@ -721,8 +721,9 @@
     const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
 
     items.forEach((item, idx) => {
+      const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
       const courseAdd = item.course ? coursePeople : 0;
-      const forecast  = item.target * orderDays + courseAdd;
+      const forecast  = item.target * orderDays + courseAdd + remaining;
       document.getElementById(`forecast_${idx}`).value = forecast;
       document.getElementById(`order_${idx}`).value = forecast;
     });
