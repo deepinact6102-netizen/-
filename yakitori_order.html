@@ -452,7 +452,7 @@
 <div class="day-tabs" id="dayTabs"></div>
 
 <div class="info-bar">
-  納品欄は <span id="deliveryFromLabel">—</span> の発注数（中1日）
+  納品欄は <span id="deliveryFromLabel">—</span> の発注数（前日発注・翌日納品）
 </div>
 
 <!-- 注文日数 & コース人数 -->
@@ -688,7 +688,7 @@
   }
 
   function getDelivery(dateStr) {
-    const fromDate = addDays(dateStr, -2);
+    const fromDate = addDays(dateStr, -1);
     const data = loadDate(fromDate);
     return { values: data ? data.order : items.map(() => 0), fromDate };
   }
