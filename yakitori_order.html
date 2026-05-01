@@ -437,6 +437,9 @@
 <body>
 
 <h1>🍢 焼き鳥 発注表</h1>
+<div style="font-size:0.68rem;color:#555;margin-bottom:10px;word-break:break-all;">
+  🔗 <a href="https://deepinact6102-netizen.github.io/-/" style="color:#4a90d9;">https://deepinact6102-netizen.github.io/-/</a>
+</div>
 
 <div class="week-nav">
   <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
@@ -718,8 +721,8 @@
         <td class="name">${item.icon} ${item.name} <span class="item-target">(${item.target})</span></td>
         <td class="delivery-cell"><input type="number" id="delivery_${idx}" min="0" value="${delVal}" placeholder="0" oninput="updateStock(${idx})"></td>
         <td class="stock-cell"><input type="number" id="stock_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
-        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0"></td>
-        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}"></td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="updateForecast(${idx})"></td>
+        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}" oninput="syncOrder(${idx})"></td>
         <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—"></td>
       `;
       body.appendChild(tr);
@@ -731,6 +734,23 @@
     const delVal = parseInt(document.getElementById(`delivery_${idx}`)?.value) || 0;
     const prevRemaining = prevData?.remaining[idx] || 0;
     document.getElementById(`stock_${idx}`).value = delVal + prevRemaining;
+    saveCurrent();
+  }
+
+  function updateForecast(idx) {
+    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
+    const item = items[idx];
+    const remaining = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+    const courseAdd = item.course ? coursePeople : 0;
+    const forecast = item.target * orderDays + courseAdd + remaining;
+    document.getElementById(`forecast_${idx}`).value = forecast;
+    document.getElementById(`order_${idx}`).value = forecast;
+    saveCurrent();
+  }
+
+  function syncOrder(idx) {
+    const forecast = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
+    document.getElementById(`order_${idx}`).value = forecast;
     saveCurrent();
   }
 
