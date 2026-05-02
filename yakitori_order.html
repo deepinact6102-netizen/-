@@ -709,7 +709,7 @@
       const forecast      = data ? data.forecast[idx] : item.target;
       const order         = data?.order[idx] ?? '';
       const autoDelivery  = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : (delivery[idx] || 0);
-      const delVal        = data?.delivery?.[idx] != null ? data.delivery[idx] : autoDelivery;
+      const delVal        = item.fixedDeliveryPerDay != null ? autoDelivery : (data?.delivery?.[idx] != null ? data.delivery[idx] : autoDelivery);
       const prevRemaining = prevData?.remaining[idx] || 0;
       const autoStock     = delVal + prevRemaining;
       const stockVal      = data?.stock?.[idx] != null ? data.stock[idx] : autoStock;
@@ -754,19 +754,11 @@
     return need - available;
   }
 
-  function calcOrder(idx) {
-    const item = items[idx];
-    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
-    const courseAdd = item.course ? coursePeople : 0;
-    // 発注数 = 1日目安 × 注文日数 + コース人数
-    return item.target * orderDays + courseAdd;
-  }
-
   function updateForecast(idx) {
     const val = calcForecast(idx);
     document.getElementById(`forecast_${idx}`).value = val;
     document.getElementById(`order_${idx}`).value = val;
-    saveCurrent();
+    onOrderChange();
   }
 
   function syncOrder(idx) {
@@ -799,7 +791,7 @@
       document.getElementById(`forecast_${idx}`).value = fval;
       document.getElementById(`order_${idx}`).value = fval;
     });
-    saveCurrent();
+    onOrderChange();
   }
 
   function clearDay() {
