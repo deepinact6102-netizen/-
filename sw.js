@@ -1,4 +1,4 @@
-const CACHE = 'yakitori-v7';
+const CACHE = 'yakitori-v8';
 const FILES = [
   './yakitori_order.html',
   './manifest.json',

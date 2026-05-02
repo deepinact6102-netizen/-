@@ -709,7 +709,11 @@
       const forecast      = data ? data.forecast[idx] : item.target;
       const order         = data?.order[idx] ?? '';
       const autoDelivery  = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : (delivery[idx] || 0);
-      const delVal        = item.fixedDeliveryPerDay != null ? autoDelivery : (data?.delivery?.[idx] != null ? data.delivery[idx] : autoDelivery);
+      const savedDelivery = data?.delivery?.[idx];
+      // 固定品目（レバー）：スキップ納品日（明示的に0保存）なら0、それ以外は固定値
+      const delVal        = item.fixedDeliveryPerDay != null
+        ? (savedDelivery === 0 ? 0 : autoDelivery)
+        : (savedDelivery != null ? savedDelivery : autoDelivery);
       const prevRemaining = prevData?.remaining[idx] || 0;
       const stockVal      = delVal + prevRemaining;
 
@@ -743,9 +747,10 @@
 
   function calcForecast(idx) {
     const item = items[idx];
-    // レバーは特例：常に10本×注文日数で固定
+    // レバーは特例：スキップ納品日は0、それ以外は10本×注文日数で固定
     if (item.fixedDeliveryPerDay != null) {
-      return item.fixedDeliveryPerDay * orderDays;
+      const delEl = document.getElementById(`delivery_${idx}`);
+      return (delEl && parseInt(delEl.value) === 0) ? 0 : item.fixedDeliveryPerDay * orderDays;
     }
     const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
     const courseAdd    = item.course ? coursePeople : 0;
@@ -806,7 +811,10 @@
     items.forEach((item, idx) => {
       if (item.fixedDeliveryPerDay != null) {
         const delEl = document.getElementById(`delivery_${idx}`);
-        if (delEl) delEl.value = item.fixedDeliveryPerDay * orderDays;
+        // スキップ納品日（表示が0）は上書きしない
+        if (delEl && parseInt(delEl.value) !== 0) {
+          delEl.value = item.fixedDeliveryPerDay * orderDays;
+        }
         updateStock(idx);
       }
       const fval = calcForecast(idx);
