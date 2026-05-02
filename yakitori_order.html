@@ -750,7 +750,7 @@
     const tomorrowDel  = fixedDel ?? getTomorrowDelivery(idx) ?? item.target;
     const need         = item.target * orderDays + courseAdd;
     const available    = remaining + tomorrowDel - item.target;
-    return need - available;
+    return Math.max(0, need - available);
   }
 
   function updateForecast(idx) {
