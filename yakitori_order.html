@@ -711,8 +711,7 @@
       const autoDelivery  = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : (delivery[idx] || 0);
       const delVal        = item.fixedDeliveryPerDay != null ? autoDelivery : (data?.delivery?.[idx] != null ? data.delivery[idx] : autoDelivery);
       const prevRemaining = prevData?.remaining[idx] || 0;
-      const autoStock     = delVal + prevRemaining;
-      const stockVal      = data?.stock?.[idx] != null ? data.stock[idx] : autoStock;
+      const stockVal      = delVal + prevRemaining;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
