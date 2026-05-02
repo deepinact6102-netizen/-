@@ -756,16 +756,20 @@
     return Math.max(0, need - available);
   }
 
+  function ceilTo5(n) {
+    return n <= 0 ? 0 : Math.ceil(n / 5) * 5;
+  }
+
   function updateForecast(idx) {
     const val = calcForecast(idx);
     document.getElementById(`forecast_${idx}`).value = val;
-    document.getElementById(`order_${idx}`).value = val;
+    document.getElementById(`order_${idx}`).value = ceilTo5(val);
     onOrderChange();
   }
 
   function syncOrder(idx) {
     const val = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
-    document.getElementById(`order_${idx}`).value = val;
+    document.getElementById(`order_${idx}`).value = ceilTo5(val);
     onOrderChange();
   }
 
@@ -807,7 +811,7 @@
       }
       const fval = calcForecast(idx);
       document.getElementById(`forecast_${idx}`).value = fval;
-      document.getElementById(`order_${idx}`).value = fval;
+      document.getElementById(`order_${idx}`).value = ceilTo5(fval);
     });
     onOrderChange();
   }
