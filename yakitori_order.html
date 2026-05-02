@@ -743,11 +743,14 @@
 
   function calcForecast(idx) {
     const item = items[idx];
+    // レバーは特例：常に10本×注文日数で固定
+    if (item.fixedDeliveryPerDay != null) {
+      return item.fixedDeliveryPerDay * orderDays;
+    }
     const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
     const courseAdd    = item.course ? coursePeople : 0;
     const remaining    = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
-    const fixedDel     = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : null;
-    const tomorrowDel  = fixedDel ?? getTomorrowDelivery(idx) ?? item.target;
+    const tomorrowDel  = getTomorrowDelivery(idx) ?? item.target;
     const need         = item.target * orderDays + courseAdd;
     const available    = remaining + tomorrowDel - item.target;
     return Math.max(0, need - available);
