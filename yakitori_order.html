@@ -773,10 +773,26 @@
     const deliveryDate = addDays(currentDate, 2);
     const deliveryData = loadDate(deliveryDate);
     if (deliveryData) {
-      // 納品日のデータが存在すれば delivery を今日の order で上書き保存
       const todayData = getCurrentData();
       deliveryData.delivery = todayData.order;
       saveDate(deliveryDate, deliveryData);
+    }
+    // 2日分以上の発注：翌日〜(orderDays-1)日分の発注を0にする
+    // 例）2日分：月曜発注→火曜発注ゼロ→木曜納品ゼロ
+    for (let i = 1; i < orderDays; i++) {
+      const skipDate = addDays(currentDate, i);
+      const skipData = loadDate(skipDate);
+      if (skipData) {
+        skipData.order = items.map(() => 0);
+        saveDate(skipDate, skipData);
+      }
+      // スキップ日の2日後（納品日）も0に更新
+      const skipDeliveryDate = addDays(skipDate, 2);
+      const skipDeliveryData = loadDate(skipDeliveryDate);
+      if (skipDeliveryData) {
+        skipDeliveryData.delivery = items.map(() => 0);
+        saveDate(skipDeliveryDate, skipDeliveryData);
+      }
     }
   }
 
