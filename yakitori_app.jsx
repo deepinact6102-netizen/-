@@ -1,14 +1,14 @@
 import { useState } from "react";
 
 const MENU_ITEMS = [
-  { id: 1, name: "Negima", description: "Chicken thigh and green onion", price: 2.5 },
-  { id: 2, name: "Tsukune", description: "Chicken meatball with tare sauce", price: 2.75 },
-  { id: 3, name: "Momo", description: "Juicy chicken thigh", price: 2.25 },
-  { id: 4, name: "Kawa", description: "Crispy chicken skin", price: 2.0 },
-  { id: 5, name: "Tebasaki", description: "Chicken wing", price: 2.5 },
-  { id: 6, name: "Shishito", description: "Grilled shishito peppers", price: 1.75 },
-  { id: 7, name: "Enoki Bacon", description: "Bacon-wrapped enoki mushrooms", price: 3.0 },
-  { id: 8, name: "Asparagus Bacon", description: "Bacon-wrapped asparagus", price: 3.0 },
+  { id: 1, name: "ねぎま", description: "鶏もも肉とねぎの串焼き", price: 2.5 },
+  { id: 2, name: "つくね", description: "たれをまとった鶏団子", price: 2.75 },
+  { id: 3, name: "もも", description: "ジューシーな鶏もも肉", price: 2.25 },
+  { id: 4, name: "皮", description: "パリパリの鶏皮", price: 2.0 },
+  { id: 5, name: "手羽先", description: "鶏の手羽先", price: 2.5 },
+  { id: 6, name: "ししとう", description: "ししとうの炭火焼き", price: 1.75 },
+  { id: 7, name: "えのきベーコン巻き", description: "えのきのベーコン巻き", price: 3.0 },
+  { id: 8, name: "アスパラベーコン巻き", description: "アスパラガスのベーコン巻き", price: 3.0 },
 ];
 
 function CartItem({ item, quantity, onIncrease, onDecrease }) {
@@ -33,10 +33,10 @@ function MenuItem({ item, quantity, onAdd }) {
       <div style={styles.menuItemInfo}>
         <h3 style={styles.menuItemName}>{item.name}</h3>
         <p style={styles.menuItemDesc}>{item.description}</p>
-        <span style={styles.menuItemPrice}>${item.price.toFixed(2)} / skewer</span>
+        <span style={styles.menuItemPrice}>${item.price.toFixed(2)} / 1本</span>
       </div>
       <button style={styles.addBtn} onClick={() => onAdd(item)}>
-        {quantity > 0 ? `Add more (${quantity})` : "Add"}
+        {quantity > 0 ? `追加する (${quantity})` : "追加"}
       </button>
     </div>
   );
@@ -73,22 +73,22 @@ export default function YakitoriApp() {
   return (
     <div style={styles.app}>
       <header style={styles.header}>
-        <h1 style={styles.title}>焼き鳥 Yakitori Grill</h1>
-        <p style={styles.subtitle}>Charcoal-grilled skewers, made to order</p>
+        <h1 style={styles.title}>焼き鳥グリル</h1>
+        <p style={styles.subtitle}>ご注文を受けてから焼き上げる炭火焼き串</p>
       </header>
 
       {orderPlaced && (
         <div style={styles.banner}>
-          Order placed! Your skewers are on the grill.{" "}
+          ご注文を承りました！串を焼き始めます。{" "}
           <button style={styles.bannerBtn} onClick={() => setOrderPlaced(false)}>
-            Order again
+            もう一度注文する
           </button>
         </div>
       )}
 
       <div style={styles.layout}>
         <section style={styles.menu}>
-          <h2 style={styles.sectionTitle}>Menu</h2>
+          <h2 style={styles.sectionTitle}>メニュー</h2>
           {MENU_ITEMS.map((item) => (
             <MenuItem
               key={item.id}
@@ -101,10 +101,10 @@ export default function YakitoriApp() {
 
         <aside style={styles.sidebar}>
           <h2 style={styles.sectionTitle}>
-            Your Order {skewersInCart > 0 && `(${skewersInCart})`}
+            ご注文内容 {skewersInCart > 0 && `(${skewersInCart})`}
           </h2>
           {cartItems.length === 0 ? (
-            <p style={styles.emptyCart}>No skewers added yet.</p>
+            <p style={styles.emptyCart}>まだ串が追加されていません。</p>
           ) : (
             <>
               {cartItems.map((item) => (
@@ -117,11 +117,11 @@ export default function YakitoriApp() {
                 />
               ))}
               <div style={styles.totalRow}>
-                <span>Total</span>
+                <span>合計</span>
                 <span>${total.toFixed(2)}</span>
               </div>
               <button style={styles.orderBtn} onClick={handleOrder}>
-                Place Order
+                注文する
               </button>
             </>
           )}
