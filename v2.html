@@ -197,10 +197,9 @@
       font-weight: 600;
       font-size: 0.82rem;
       padding-left: 8px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      overflow: visible;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     td.target { color: #888; font-size: 0.8rem; }
@@ -498,35 +497,67 @@
       border-color: #f5c842;
     }
 
-    /* カスタム品目の名称・目安入力 */
-    .custom-name-input {
+    /* 品目設定パネル */
+    .settings-toggle-btn {
+      width: 100%;
+      padding: 8px 12px;
+      background: #252525;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: #f5c842;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+    .settings-toggle-btn:active { background: #333; }
+    .settings-panel {
+      display: none;
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .settings-panel.open { display: block; }
+    .settings-item-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .settings-item-row:last-child { border-bottom: none; }
+    .settings-icon { width: 22px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+    .settings-name-input {
       flex: 1;
       min-width: 0;
-      background: transparent;
-      border: none;
-      border-bottom: 1px dashed #555;
+      padding: 7px 8px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
       color: #f0e6d3;
-      font-size: 0.82rem;
-      font-weight: 600;
+      font-size: 16px;
       outline: none;
-      padding: 2px 0;
     }
-    .custom-name-input::placeholder { color: #555; }
-    .custom-name-input:focus { border-bottom-color: #f5c842; }
-    .custom-target-input {
-      width: 38px;
-      background: transparent;
-      border: none;
-      border-bottom: 1px dashed #555;
-      color: #666;
-      font-size: 0.72rem;
+    .settings-name-input:focus { border-color: #f5c842; }
+    .settings-lbl { font-size: 0.7rem; color: #888; flex-shrink: 0; }
+    .settings-target-input {
+      width: 50px;
+      flex-shrink: 0;
+      padding: 7px 4px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #f0e6d3;
+      font-size: 16px;
       text-align: center;
       outline: none;
       -moz-appearance: textfield;
     }
-    .custom-target-input::-webkit-outer-spin-button,
-    .custom-target-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .custom-target-input:focus { border-bottom-color: #f5c842; }
+    .settings-target-input:focus { border-color: #f5c842; }
+    .settings-target-input::-webkit-outer-spin-button,
+    .settings-target-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
     /* 原料発注ページ */
     #page-raw { display: none; }
@@ -666,6 +697,9 @@
   <span class="course-badge" id="courseBadge"></span>
 </div>
 
+<button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ 品目名・目安を設定 ▼</button>
+<div class="settings-panel" id="settingsPanel"></div>
+
 <div class="table-wrapper">
   <table>
     <thead>
@@ -749,6 +783,9 @@
     <span class="option-label">人</span>
   </div>
 </div>
+
+<button class="settings-toggle-btn" onclick="toggleRawSettings()">⚙️ 品目名・目安を設定 ▼</button>
+<div class="settings-panel" id="rawSettingsPanel"></div>
 
 <div class="table-wrapper">
   <table>
@@ -1021,9 +1058,8 @@
       const stockVal      = delVal + prevRemaining;
 
       const tr = document.createElement('tr');
-      const nameCell = item.custom
-        ? `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})"> <input type="number" class="custom-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" placeholder="目安" oninput="updateCustomTarget(${item.customIdx})"></td>`
-        : `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="bname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateBaseName(${idx})"> <input type="number" class="custom-target-input" id="btarget_${idx}" value="${item.target}" placeholder="目安" oninput="updateBaseTarget(${idx})"></td>`;
+      const dispName = item.name || (item.custom ? '追加品目' : '');
+      const nameCell = `<td class="name">${item.icon} ${dispName} <span class="item-target">(${item.target || 0})</span></td>`;
       tr.innerHTML = `
         ${nameCell}
         <td class="delivery-cell"><input type="number" id="delivery_${idx}" min="0" value="${delVal}" placeholder="0" oninput="updateStock(${idx})"></td>
@@ -1182,26 +1218,65 @@
     }
   }
 
-  // ---- カスタム品目 ----
+  // ---- 品目設定パネル ----
+  function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    const btn = document.querySelector('[onclick="toggleSettings()"]');
+    const isOpen = panel.classList.toggle('open');
+    btn.textContent = isOpen ? '⚙️ 品目名・目安を設定 ▲' : '⚙️ 品目名・目安を設定 ▼';
+    if (isOpen) renderSettingsPanel();
+  }
+
+  function renderSettingsPanel() {
+    const panel = document.getElementById('settingsPanel');
+    panel.innerHTML = items.map((item, idx) => {
+      if (item.custom) {
+        return `<div class="settings-item-row">
+          <span class="settings-icon">${item.icon}</span>
+          <input type="text" class="settings-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})">
+          <span class="settings-lbl">目安</span>
+          <input type="number" class="settings-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" oninput="updateCustomTarget(${item.customIdx})">
+          <span class="settings-lbl">本</span>
+        </div>`;
+      } else {
+        return `<div class="settings-item-row">
+          <span class="settings-icon">${item.icon}</span>
+          <input type="text" class="settings-name-input" id="bname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateBaseName(${idx})">
+          <span class="settings-lbl">目安</span>
+          <input type="number" class="settings-target-input" id="btarget_${idx}" value="${item.target}" oninput="updateBaseTarget(${idx})">
+          <span class="settings-lbl">本</span>
+        </div>`;
+      }
+    }).join('');
+  }
+
   function updateBaseName(idx) {
+    saveCurrent();
     baseItemDefs[idx].name = document.getElementById(`bname_${idx}`).value;
     items = buildItems();
     saveBaseItemDefs();
+    renderTable();
   }
   function updateBaseTarget(idx) {
+    saveCurrent();
     baseItemDefs[idx].target = parseInt(document.getElementById(`btarget_${idx}`).value) || 0;
     items = buildItems();
     saveBaseItemDefs();
+    renderTable();
   }
   function updateCustomName(ci) {
+    saveCurrent();
     customItemDefs[ci].name = document.getElementById(`cname_${ci}`).value;
     items = buildItems();
     saveCustomItemDefs();
+    renderTable();
   }
   function updateCustomTarget(ci) {
+    saveCurrent();
     customItemDefs[ci].target = parseInt(document.getElementById(`ctarget_${ci}`).value) || 0;
     items = buildItems();
     saveCustomItemDefs();
+    renderTable();
   }
 
   // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
@@ -1340,7 +1415,7 @@
       const stockVal  = delVal + prevRem;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="name">🍢 <input type="text" class="custom-name-input" id="riname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateRawItemName(${idx})"> <input type="number" class="custom-target-input" id="ritarget_${idx}" value="${item.target||''}" placeholder="目安" oninput="updateRawItemTarget(${idx})"></td>
+        <td class="name">🍢 ${item.name || '品目名未設定'} <span class="item-target">(${item.target || 0})</span></td>
         <td class="delivery-cell"><input type="number" id="rdel_${idx}" min="0" value="${delVal}" placeholder="0" oninput="rawUpdateStock(${idx})"></td>
         <td class="stock-cell"><input type="number" id="rsto_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
         <td><input type="number" id="rrem_${idx}" min="0" value="${remaining}" placeholder="0" oninput="rawUpdateForecast(${idx})"></td>
@@ -1351,15 +1426,40 @@
     });
   }
 
+  function toggleRawSettings() {
+    const panel = document.getElementById('rawSettingsPanel');
+    const btn = document.querySelector('[onclick="toggleRawSettings()"]');
+    const isOpen = panel.classList.toggle('open');
+    btn.textContent = isOpen ? '⚙️ 品目名・目安を設定 ▲' : '⚙️ 品目名・目安を設定 ▼';
+    if (isOpen) renderRawSettingsPanel();
+  }
+
+  function renderRawSettingsPanel() {
+    const panel = document.getElementById('rawSettingsPanel');
+    panel.innerHTML = rawItems.map((item, idx) => `
+      <div class="settings-item-row">
+        <span class="settings-icon">🍢</span>
+        <input type="text" class="settings-name-input" id="riname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateRawItemName(${idx})">
+        <span class="settings-lbl">目安</span>
+        <input type="number" class="settings-target-input" id="ritarget_${idx}" value="${item.target || ''}" oninput="updateRawItemTarget(${idx})">
+        <span class="settings-lbl">本</span>
+      </div>
+    `).join('');
+  }
+
   function updateRawItemName(idx) {
+    rawSaveCurrent();
     rawItemDefs[idx].name = document.getElementById(`riname_${idx}`).value;
     rawItems = buildRawItems();
     saveRawItemDefs();
+    rawRenderTable();
   }
   function updateRawItemTarget(idx) {
+    rawSaveCurrent();
     rawItemDefs[idx].target = parseInt(document.getElementById(`ritarget_${idx}`).value) || 0;
     rawItems = buildRawItems();
     saveRawItemDefs();
+    rawRenderTable();
   }
 
   function rawBuildDayTabs() {
