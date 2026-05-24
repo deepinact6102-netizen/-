@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>焼き鳥 発注表 v2</title>
+  <meta name="apple-mobile-web-app-title" content="発注表v2">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="発注表">
+  <meta name="theme-color" content="#f5c842">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      padding: 12px;
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f5c842;
+      margin-bottom: 10px;
+    }
+
+    /* 週ナビ */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .week-nav input[type="date"] {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #f0e6d3;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+      text-align: center;
+    }
+
+    .week-nav input[type="date"]:focus { border-color: #f5c842; }
+
+    .nav-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #f0e6d3;
+      cursor: pointer;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .nav-btn:active { background: #444; }
+
+    /* 曜日タブ */
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      margin-bottom: 10px;
+    }
+
+    .day-tab {
+      padding: 5px 2px;
+      border-radius: 5px;
+      border: 1px solid #3a3a3a;
+      background: #252525;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.72rem;
+      text-align: center;
+      line-height: 1.4;
+      transition: background 0.12s;
+    }
+
+    .day-tab .wd { font-weight: 700; font-size: 0.78rem; }
+    .day-tab .md { font-size: 0.65rem; color: #666; }
+
+    .day-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+    }
+
+    .day-tab.active .md { color: #7a6200; }
+
+    .day-tab.has-data { border-color: #555; }
+    .day-tab.today .wd { text-decoration: underline; }
+    .day-tab:not(.active):active { background: #333; }
+
+    /* 日：赤、土：青 */
+    .day-tab.sun .wd { color: #e06060; }
+    .day-tab.sat .wd { color: #6090e0; }
+    .day-tab.active .wd { color: #1a1a1a; }
+
+    /* 定休日（日曜） */
+    .day-tab.kyuujitsu {
+      background: #1e1e1e;
+      color: #555;
+      cursor: default;
+      opacity: 0.6;
+    }
+    .day-tab.kyuujitsu .wd { color: #e06060; opacity: 0.5; }
+    .day-tab.kyuujitsu .rest { font-size: 0.58rem; color: #c04040; }
+
+    /* info */
+    .info-bar {
+      font-size: 0.7rem;
+      color: #777;
+      margin-bottom: 8px;
+    }
+
+    .info-bar span { color: #f5c842; }
+
+    /* 保存トースト */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: #2ecc71;
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: transform 0.25s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* テーブル */
+    .table-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    table {
+      border-collapse: collapse;
+      background: #222;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    thead tr { background: #2e2e2e; }
+
+    thead th {
+      padding: 7px 4px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #f5c842;
+      border-bottom: 2px solid #444;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    th:nth-child(1), td:nth-child(1) { width: 30%; }
+    th:nth-child(2), td:nth-child(2) { width: 11%; }
+    th:nth-child(3), td:nth-child(3) { width: 11%; }
+    th:nth-child(4), td:nth-child(4) { width: 16%; }
+    th:nth-child(5), td:nth-child(5) { width: 16%; }
+    th:nth-child(6), td:nth-child(6) { width: 16%; }
+
+    thead th:first-child { text-align: left; padding-left: 8px; }
+
+    tbody tr { border-bottom: 1px solid #2a2a2a; }
+    tbody tr:last-child { border-bottom: none; }
+
+    td {
+      padding: 6px 2px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    td.name {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding-left: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td.target { color: #888; font-size: 0.8rem; }
+    td.delivery-cell input { border-color: #7ec8e3; color: #7ec8e3; }
+    td.stock-cell input { border-color: #e8a44a; color: #e8a44a; }
+    .item-target { color: #666; font-size: 0.72rem; font-weight: 400; }
+
+    td input[type="number"] {
+      width: 100%;
+      max-width: 52px;
+      padding: 5px 2px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.85rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    td input[type="number"]::-webkit-outer-spin-button,
+    td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    td input[type="number"]:focus {
+      border-color: #f5c842;
+      background: #252525;
+    }
+
+    td.forecast-cell input { border-color: #5a8a5a; color: #7dcf7d; }
+
+    td.order-cell input {
+      border-color: #f5c842;
+      color: #f5c842;
+      font-weight: 700;
+      background: #1e1a00;
+    }
+
+    td.order-cell input:focus { background: #252000; }
+
+    /* ボタン群 */
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 11px 4px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-calc   { background: #f5c842; color: #1a1a1a; }
+    .btn-save   { background: #2ecc71; color: #fff; }
+    .btn-reset  { background: #2a2a2a; color: #ccc; border: 1px solid #555; }
+
+    .btn-calc:active  { background: #ffd966; }
+    .btn-save:active  { background: #27ae60; }
+    .btn-reset:active { background: #333; }
+
+    /* オプションパネル */
+    .options-panel {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #252525;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .option-label {
+      font-size: 0.72rem;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .day-toggle {
+      display: flex;
+      gap: 3px;
+    }
+
+    .day-toggle button {
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #aaa;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .day-toggle button.active {
+      background: #e07020;
+      color: #fff;
+      border-color: #e07020;
+    }
+
+    .course-input {
+      width: 52px;
+      padding: 4px 4px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.85rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .course-input::-webkit-outer-spin-button,
+    .course-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .course-input:focus { border-color: #a070f0; }
+
+    .course-badge {
+      font-size: 0.68rem;
+      color: #a070f0;
+      white-space: nowrap;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: #555;
+      line-height: 1.7;
+    }
+
+    /* カメラ読み取りボタン */
+    .btn-camera { background: #4a90d9; color: #fff; }
+    .btn-camera:active { background: #357abd; }
+
+    /* OCRモーダル */
+    .ocr-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .ocr-overlay.show { display: block; }
+
+    .ocr-box {
+      background: #222;
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .ocr-box h2 {
+      font-size: 0.95rem;
+      color: #f5c842;
+      margin-bottom: 12px;
+    }
+
+    .ocr-preview {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      max-height: 200px;
+      object-fit: contain;
+      background: #111;
+    }
+
+    .ocr-status {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .ocr-rows { display: flex; flex-direction: column; gap: 6px; }
+
+    .ocr-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #2a2a2a;
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+
+    .ocr-row .item-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .ocr-row input {
+      width: 60px;
+      padding: 5px 6px;
+      border-radius: 5px;
+      border: 1px solid #555;
+      background: #1a1a1a;
+      color: #f0e6d3;
+      text-align: center;
+      font-size: 0.9rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .ocr-row input::-webkit-outer-spin-button,
+    .ocr-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .ocr-row input:focus { border-color: #f5c842; }
+
+    .ocr-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .ocr-actions button {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ocr-apply { background: #f5c842; color: #1a1a1a; }
+    .ocr-cancel { background: #333; color: #ccc; }
+
+    /* 店舗名 */
+    .store-name-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .store-name-display {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f0e6d3;
+      cursor: pointer;
+      flex: 1;
+      padding: 4px 0;
+      border-bottom: 1px dashed #555;
+    }
+    .store-name-display.placeholder { color: #555; }
+    .store-name-input {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      background: #2a2a2a;
+      border: 1px solid #f5c842;
+      border-radius: 5px;
+      color: #f0e6d3;
+      outline: none;
+    }
+
+    /* ページタブ */
+    .page-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .page-tab {
+      flex: 1;
+      padding: 9px 4px;
+      border-radius: 7px;
+      border: 1px solid #444;
+      background: #252525;
+      color: #aaa;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .page-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+    }
+
+    /* カスタム品目の名称・目安入力 */
+    .custom-name-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #555;
+      color: #f0e6d3;
+      font-size: 0.82rem;
+      font-weight: 600;
+      outline: none;
+      padding: 2px 0;
+    }
+    .custom-name-input::placeholder { color: #555; }
+    .custom-name-input:focus { border-bottom-color: #f5c842; }
+    .custom-target-input {
+      width: 38px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #555;
+      color: #666;
+      font-size: 0.72rem;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .custom-target-input::-webkit-outer-spin-button,
+    .custom-target-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .custom-target-input:focus { border-bottom-color: #f5c842; }
+
+    /* 原料発注ページ */
+    #page-raw { display: none; }
+    .raw-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .raw-header h2 {
+      font-size: 0.95rem;
+      color: #f5c842;
+    }
+    .raw-table-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      margin-bottom: 12px;
+    }
+    .raw-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      table-layout: fixed;
+    }
+    .raw-table thead tr { background: #2e2e2e; }
+    .raw-table thead th {
+      padding: 7px 4px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #f5c842;
+      border-bottom: 2px solid #444;
+    }
+    .raw-table thead th:first-child { text-align: left; padding-left: 8px; }
+    .raw-table tbody tr { border-bottom: 1px solid #2a2a2a; }
+    .raw-table tbody tr:last-child { border-bottom: none; }
+    .raw-table td {
+      padding: 5px 3px;
+      vertical-align: middle;
+      text-align: center;
+    }
+    .raw-table td:first-child { padding-left: 6px; }
+    .raw-table th:nth-child(1), .raw-table td:nth-child(1) { width: 32%; }
+    .raw-table th:nth-child(2), .raw-table td:nth-child(2) { width: 16%; }
+    .raw-table th:nth-child(3), .raw-table td:nth-child(3) { width: 20%; }
+    .raw-table th:nth-child(4), .raw-table td:nth-child(4) { width: 26%; }
+    .raw-table th:nth-child(5), .raw-table td:nth-child(5) { width: 6%; }
+    .raw-table td input[type="text"],
+    .raw-table td input[type="number"] {
+      width: 100%;
+      padding: 5px 3px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #f0e6d3;
+      font-size: 0.82rem;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .raw-table td:first-child input { text-align: left; }
+    .raw-table td input:focus { border-color: #f5c842; }
+    .raw-table td input[type="number"]::-webkit-outer-spin-button,
+    .raw-table td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .raw-del-btn {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px;
+    }
+    .raw-del-btn:active { color: #e06060; }
+    .btn-add-row {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed #555;
+      background: #1e1e1e;
+      color: #aaa;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .btn-add-row:active { background: #252525; }
+  </style>
+</head>
+<body>
+
+<h1>🍢 焼き鳥 発注表</h1>
+
+<!-- 店舗名 -->
+<div class="store-name-bar">
+  <div id="storeNameDisplay" class="store-name-display placeholder" onclick="startEditStoreName()">店舗名を入力してください</div>
+  <input type="text" id="storeNameInput" class="store-name-input" style="display:none" placeholder="店舗名" onblur="saveStoreName()" onkeydown="if(event.key==='Enter')saveStoreName()">
+</div>
+
+<!-- ページタブ -->
+<div class="page-tabs">
+  <button class="page-tab active" id="tab-yaki" onclick="switchPage('yaki')">🍢 焼き鳥発注</button>
+  <button class="page-tab" id="tab-raw" onclick="switchPage('raw')">📦 原料発注</button>
+</div>
+
+<!-- 焼き鳥発注ページ -->
+<div id="page-yaki">
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
+  <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
+  <input type="date" id="datePicker" onchange="onDateChange()">
+  <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
+  <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
+</div>
+
+<div class="day-tabs" id="dayTabs"></div>
+
+<div class="info-bar">
+  納品欄は <span id="deliveryFromLabel">—</span> の発注数（中1日）
+</div>
+
+<!-- 注文日数 & コース人数 -->
+<div class="options-panel">
+  <div class="option-group">
+    <span class="option-label">注文日数</span>
+    <div class="day-toggle">
+      <button id="days1" class="active" onclick="setOrderDays(1)">1日</button>
+      <button id="days2" onclick="setOrderDays(2)">2日</button>
+      <button id="days3" onclick="setOrderDays(3)">3日</button>
+    </div>
+  </div>
+  <div class="option-group">
+    <span class="option-label">コース人数</span>
+    <input type="number" class="course-input" id="coursePeople" min="0" value="0" placeholder="0">
+    <span class="option-label">人</span>
+  </div>
+  <span class="course-badge" id="courseBadge"></span>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>名称（目安）</th>
+        <th>納品</th>
+        <th>在庫数</th>
+        <th>残数</th>
+        <th>予想</th>
+        <th>発注</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="buttons">
+  <button class="btn btn-calc" onclick="calcAll()">予想数を計算</button>
+  <button class="btn btn-save" onclick="saveManual()">💾 保存</button>
+  <button class="btn btn-reset" onclick="clearDay()">リセット</button>
+</div>
+<div style="margin-top:8px;display:flex;gap:6px;">
+  <button class="btn btn-camera" style="flex:1;padding:11px;" onclick="openCamera()">📷 カメラで撮影</button>
+  <button class="btn btn-camera" style="flex:1;padding:11px;background:#6a5acd;" onclick="openGallery()">🖼️ 写真から選ぶ</button>
+</div>
+
+<!-- カメラ入力（非表示） -->
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageCapture(this)">
+<input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="handleImageCapture(this)">
+
+<!-- OCRモーダル -->
+<div class="ocr-overlay" id="ocrOverlay">
+  <div class="ocr-box">
+    <h2>📷 残数の読み取り</h2>
+    <img id="ocrPreview" class="ocr-preview" src="" alt="撮影画像">
+    <div class="ocr-status" id="ocrStatus">読み取り中...</div>
+    <div class="ocr-rows" id="ocrRows"></div>
+    <div class="ocr-actions">
+      <button class="ocr-apply" onclick="applyOCR()">この内容で入力</button>
+      <button class="ocr-cancel" onclick="closeOCR()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">
+  ※ 予想 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)<br>
+  ※ 発注数は予想数と同じ値がセットされます。最後に手動で調整してください
+</div>
+
+</div><!-- /page-yaki -->
+
+<!-- 原料発注ページ -->
+<div id="page-raw">
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="rawMoveMonth(-1)">«前月</button>
+  <button class="nav-btn" onclick="rawMoveWeek(-1)">◀前週</button>
+  <input type="date" id="rawDatePicker" onchange="onRawDateChange()">
+  <button class="nav-btn" onclick="rawMoveWeek(1)">翌週▶</button>
+  <button class="nav-btn" onclick="rawMoveMonth(1)">翌月»</button>
+</div>
+
+<div class="day-tabs" id="rawDayTabs"></div>
+
+<div class="info-bar">
+  納品欄は <span id="rawDeliveryFromLabel">—</span> の発注数（中1日）
+</div>
+
+<div class="options-panel">
+  <div class="option-group">
+    <span class="option-label">注文日数</span>
+    <div class="day-toggle">
+      <button id="rdays1" class="active" onclick="rawSetOrderDays(1)">1日</button>
+      <button id="rdays2" onclick="rawSetOrderDays(2)">2日</button>
+      <button id="rdays3" onclick="rawSetOrderDays(3)">3日</button>
+    </div>
+  </div>
+  <div class="option-group">
+    <span class="option-label">コース人数</span>
+    <input type="number" class="course-input" id="rawCoursePeople" min="0" value="0" placeholder="0">
+    <span class="option-label">人</span>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>名称（目安）</th>
+        <th>納品</th>
+        <th>在庫数</th>
+        <th>残数</th>
+        <th>予想</th>
+        <th>発注</th>
+      </tr>
+    </thead>
+    <tbody id="rawTableBody"></tbody>
+  </table>
+</div>
+
+<div class="buttons">
+  <button class="btn btn-calc" onclick="rawCalcAll()">予想数を計算</button>
+  <button class="btn btn-save" onclick="rawSaveManual()">💾 保存</button>
+  <button class="btn btn-reset" onclick="rawClearDay()">リセット</button>
+</div>
+
+<div class="footer-note">
+  ※ 予想 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)
+</div>
+
+</div><!-- /page-raw -->
+
+<div class="toast" id="toast">保存しました</div>
+
+<script>
+  // カスタム品目（名称・目安を自由記入）
+  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15},{"name":"","target":15}]');
+
+  function saveCustomItemDefs() {
+    localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
+  }
+
+  // 全品目の名称・目安を編集可能にする（デフォルト値あり）
+  const defaultBaseItems = [
+    { name: 'ねぎま',   icon: '🍢', target: 30, course: true  },
+    { name: 'むね',     icon: '🍗', target: 10, course: false },
+    { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
+    { name: 'せせり',   icon: '🍢', target: 15, course: false },
+    { name: 'ハツ',     icon: '❤️', target: 30, course: true  },
+    { name: 'レバー',   icon: '🫀', target: 10, course: false, fixedDeliveryPerDay: 10 },
+    { name: 'とり皮',   icon: '🍢', target: 15, course: false },
+    { name: '砂肝',    icon: '🍢', target: 15, course: false },
+    { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
+  ];
+
+  let baseItemDefs = JSON.parse(localStorage.getItem('yakitori_base_item_defs') ||
+    JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target }))));
+
+  function saveBaseItemDefs() {
+    localStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
+  }
+
+  const baseItems = defaultBaseItems; // 固定プロパティ（icon, course, fixedDeliveryPerDay）用
+
+  function buildItems() {
+    return [
+      ...baseItems.map((it, i) => ({ ...it, name: baseItemDefs[i].name, target: baseItemDefs[i].target })),
+      { name: customItemDefs[0].name, icon: '🍢', target: customItemDefs[0].target, course: false, custom: true, customIdx: 0 },
+      { name: customItemDefs[1].name, icon: '🍢', target: customItemDefs[1].target, course: false, custom: true, customIdx: 1 },
+    ];
+  }
+
+  let items = buildItems();
+
+  let orderDays = 1;
+
+  function setOrderDays(n) {
+    orderDays = n;
+    [1,2,3].forEach(i => {
+      document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
+    });
+    updateCourseBadge();
+    calcAll();
+  }
+
+  function updateCourseBadge() {
+    const people = parseInt(document.getElementById('coursePeople')?.value) || 0;
+    const badge = document.getElementById('courseBadge');
+    if (!badge) return;
+    const courseNames = items.filter(it => it.course).map(it => it.name || '追加品目').join('・');
+    badge.textContent = people > 0 ? `${courseNames} +${people}本` : '';
+    calcAll();
+  }
+
+  const WD = ['日','月','火','水','木','金','土'];
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function isSunday(dateStr) {
+    return new Date(dateStr + 'T00:00:00').getDay() === 0;
+  }
+
+  // 日曜をスキップして n 営業日分移動（納品日・発注日の計算用）
+  function addDaysSkipSunday(dateStr, n) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const sign = n >= 0 ? 1 : -1;
+    let count = 0;
+    while (count < Math.abs(n)) {
+      d.setDate(d.getDate() + sign);
+      if (d.getDay() !== 0) count++;
+    }
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function formatLabel(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+  }
+
+  // 週の月曜日を返す
+  function getMondayOf(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0=日
+    const diff = (day === 0) ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function storageKey(dateStr) { return `yakitori_${dateStr}`; }
+
+  function loadDate(dateStr) {
+    const raw = localStorage.getItem(storageKey(dateStr));
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveDate(dateStr, data) {
+    localStorage.setItem(storageKey(dateStr), JSON.stringify(data));
+  }
+
+  function getCurrentData() {
+    const remaining = items.map((_, i) => parseInt(document.getElementById(`remaining_${i}`)?.value) || 0);
+    const forecast  = items.map((_, i) => parseInt(document.getElementById(`forecast_${i}`)?.value)  || 0);
+    const order     = items.map((_, i) => parseInt(document.getElementById(`order_${i}`)?.value)     || 0);
+    const delivery  = items.map((_, i) => parseInt(document.getElementById(`delivery_${i}`)?.value)  || 0);
+    const stock     = items.map((_, i) => parseInt(document.getElementById(`stock_${i}`)?.value)     || 0);
+    return { remaining, forecast, order, delivery, stock };
+  }
+
+  function saveCurrent() {
+    if (!currentDate) return;
+    saveDate(currentDate, getCurrentData());
+  }
+
+  function saveManual() {
+    saveCurrent();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    buildDayTabs(); // データありマーク更新
+  }
+
+  let currentDate = todayStr();
+
+  function onDateChange() {
+    saveCurrent();
+    currentDate = document.getElementById('datePicker').value;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function moveWeek(n) {
+    saveCurrent();
+    currentDate = addDays(currentDate, n * 7);
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function moveMonth(n) {
+    saveCurrent();
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + n);
+    currentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  function switchDay(dateStr) {
+    saveCurrent();
+    currentDate = dateStr;
+    document.getElementById('datePicker').value = currentDate;
+    buildDayTabs();
+    renderTable();
+  }
+
+  // 月〜日の7タブを構築（月曜始まり）
+  function buildDayTabs() {
+    const monday = getMondayOf(currentDate);
+    const today  = todayStr();
+    const container = document.getElementById('dayTabs');
+    container.innerHTML = '';
+
+    // 月火水木金土日 の順
+    const order = [0,1,2,3,4,5,6]; // 月曜から
+    order.forEach(i => {
+      const dateStr = addDays(monday, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const wdIdx = d.getDay(); // 0=日
+      const wdName = WD[wdIdx];
+      const mm = d.getMonth() + 1;
+      const dd = d.getDate();
+
+      const hasData = !!localStorage.getItem(storageKey(dateStr));
+      const isActive = dateStr === currentDate;
+      const isToday  = dateStr === today;
+
+      const isClosed = wdIdx === 0; // 日曜定休
+      let cls = 'day-tab';
+      if (isActive)  cls += ' active';
+      if (hasData)   cls += ' has-data';
+      if (isToday)   cls += ' today';
+      if (isClosed)  cls += ' sun kyuujitsu';
+      if (wdIdx === 6) cls += ' sat';
+
+      const btn = document.createElement('button');
+      btn.className = cls;
+      btn.innerHTML = isClosed
+        ? `<div class="wd">${wdName}</div><div class="md">${mm}/${dd}</div><div class="rest">定休</div>`
+        : `<div class="wd">${wdName}</div><div class="md">${mm}/${dd}</div>`;
+      btn.onclick = () => { if (!isClosed) switchDay(dateStr); };
+      container.appendChild(btn);
+    });
+  }
+
+  function getDelivery(dateStr) {
+    const fromDate = addDaysSkipSunday(dateStr, -2);
+    const data = loadDate(fromDate);
+    return { values: data ? data.order : items.map(() => 0), fromDate };
+  }
+
+  function renderTable() {
+    const date = currentDate;
+    const data = loadDate(date);
+    const prevData = loadDate(addDaysSkipSunday(date, -1));
+    const { values: delivery, fromDate } = getDelivery(date);
+
+    document.getElementById('deliveryFromLabel').textContent = formatLabel(fromDate);
+
+    const body = document.getElementById('tableBody');
+    body.innerHTML = '';
+
+    items.forEach((item, idx) => {
+      const remaining     = data?.remaining[idx] ?? '';
+      const forecast      = data ? data.forecast[idx] : item.target;
+      const order         = data?.order[idx] ?? '';
+      const autoDelivery  = item.fixedDeliveryPerDay != null ? item.fixedDeliveryPerDay * orderDays : (delivery[idx] || 0);
+      const savedDelivery = data?.delivery?.[idx];
+      // 固定品目（レバー）：スキップ納品日（明示的に0保存）なら0、それ以外は固定値
+      const delVal        = item.fixedDeliveryPerDay != null
+        ? (savedDelivery === 0 ? 0 : autoDelivery)
+        : (savedDelivery != null ? savedDelivery : autoDelivery);
+      const prevRemaining = prevData?.remaining[idx] || 0;
+      const stockVal      = delVal + prevRemaining;
+
+      const tr = document.createElement('tr');
+      const nameCell = item.custom
+        ? `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})"> <input type="number" class="custom-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" placeholder="目安" oninput="updateCustomTarget(${item.customIdx})"></td>`
+        : `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="bname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateBaseName(${idx})"> <input type="number" class="custom-target-input" id="btarget_${idx}" value="${item.target}" placeholder="目安" oninput="updateBaseTarget(${idx})"></td>`;
+      tr.innerHTML = `
+        ${nameCell}
+        <td class="delivery-cell"><input type="number" id="delivery_${idx}" min="0" value="${delVal}" placeholder="0" oninput="updateStock(${idx})"></td>
+        <td class="stock-cell"><input type="number" id="stock_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
+        <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="updateForecast(${idx})"></td>
+        <td class="forecast-cell"><input type="number" id="forecast_${idx}" min="0" value="${forecast}" oninput="syncOrder(${idx})"></td>
+        <td class="order-cell"><input type="number" id="order_${idx}" min="0" value="${order}" placeholder="—" oninput="onOrderChange()"></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function updateStock(idx) {
+    const prevData = loadDate(addDaysSkipSunday(currentDate, -1));
+    const delVal = parseInt(document.getElementById(`delivery_${idx}`)?.value) || 0;
+    const prevRemaining = prevData?.remaining[idx] || 0;
+    document.getElementById(`stock_${idx}`).value = delVal + prevRemaining;
+    saveCurrent();
+  }
+
+  function getTomorrowDelivery(idx) {
+    // 翌日の納品 = 前日の発注数（中1日・日曜スキップ）
+    const yesterday = loadDate(addDaysSkipSunday(currentDate, -1));
+    if (yesterday?.order?.[idx] != null) return yesterday.order[idx];
+    return null;
+  }
+
+  function calcForecast(idx) {
+    const item = items[idx];
+    // レバーは特例：スキップ納品日は0、それ以外は10本×注文日数で固定
+    if (item.fixedDeliveryPerDay != null) {
+      const delEl = document.getElementById(`delivery_${idx}`);
+      return (delEl && parseInt(delEl.value) === 0) ? 0 : item.fixedDeliveryPerDay * orderDays;
+    }
+    const coursePeople = parseInt(document.getElementById('coursePeople').value) || 0;
+    const courseAdd    = item.course ? coursePeople : 0;
+    const remaining    = parseInt(document.getElementById(`remaining_${idx}`).value) || 0;
+    const tomorrowDel  = getTomorrowDelivery(idx) ?? item.target;
+    const need         = item.target * orderDays + courseAdd;
+    const available    = remaining + tomorrowDel - item.target;
+    return Math.max(0, need - available);
+  }
+
+  function ceilTo5(n) {
+    return n <= 0 ? 0 : Math.ceil(n / 5) * 5;
+  }
+
+  function updateForecast(idx) {
+    const val = calcForecast(idx);
+    document.getElementById(`forecast_${idx}`).value = val;
+    document.getElementById(`order_${idx}`).value = ceilTo5(val);
+    onOrderChange();
+  }
+
+  function syncOrder(idx) {
+    const val = parseInt(document.getElementById(`forecast_${idx}`).value) || 0;
+    document.getElementById(`order_${idx}`).value = ceilTo5(val);
+    onOrderChange();
+  }
+
+  function onOrderChange() {
+    saveCurrent();
+    // 納品日（日曜スキップで2営業日後）の納品欄を即時更新
+    const deliveryDate = addDaysSkipSunday(currentDate, 2);
+    const deliveryData = loadDate(deliveryDate);
+    if (deliveryData) {
+      const todayData = getCurrentData();
+      deliveryData.delivery = todayData.order;
+      saveDate(deliveryDate, deliveryData);
+    }
+    // 2日分以上の発注：翌日〜(orderDays-1)営業日分の発注を0にする（日曜はスキップ）
+    let skipCount = 0, offset = 1;
+    while (skipCount < orderDays - 1) {
+      const skipDate = addDays(currentDate, offset++);
+      if (isSunday(skipDate)) continue;
+      skipCount++;
+      const skipData = loadDate(skipDate);
+      if (skipData) {
+        skipData.order = items.map(() => 0);
+        saveDate(skipDate, skipData);
+      }
+      // スキップ日の2営業日後（納品日）も0に更新
+      const skipDeliveryDate = addDaysSkipSunday(skipDate, 2);
+      const skipDeliveryData = loadDate(skipDeliveryDate);
+      if (skipDeliveryData) {
+        skipDeliveryData.delivery = items.map(() => 0);
+        saveDate(skipDeliveryDate, skipDeliveryData);
+      }
+    }
+  }
+
+  function calcAll() {
+    items.forEach((item, idx) => {
+      if (item.fixedDeliveryPerDay != null) {
+        const delEl = document.getElementById(`delivery_${idx}`);
+        // スキップ納品日（表示が0）は上書きしない
+        if (delEl && parseInt(delEl.value) !== 0) {
+          delEl.value = item.fixedDeliveryPerDay * orderDays;
+        }
+        updateStock(idx);
+      }
+      const fval = calcForecast(idx);
+      document.getElementById(`forecast_${idx}`).value = fval;
+      document.getElementById(`order_${idx}`).value = ceilTo5(fval);
+    });
+    onOrderChange();
+  }
+
+  function clearDay() {
+    if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
+    localStorage.removeItem(storageKey(currentDate));
+    buildDayTabs();
+    renderTable();
+  }
+
+  // ---- 店舗名 ----
+  function loadStoreName() {
+    const name = localStorage.getItem('yakitori_store_name') || '';
+    const disp = document.getElementById('storeNameDisplay');
+    if (name) {
+      disp.textContent = name;
+      disp.classList.remove('placeholder');
+    } else {
+      disp.textContent = '店舗名を入力してください';
+      disp.classList.add('placeholder');
+    }
+  }
+  function startEditStoreName() {
+    const name = localStorage.getItem('yakitori_store_name') || '';
+    const input = document.getElementById('storeNameInput');
+    input.value = name;
+    document.getElementById('storeNameDisplay').style.display = 'none';
+    input.style.display = '';
+    input.focus();
+  }
+  function saveStoreName() {
+    const val = document.getElementById('storeNameInput').value.trim();
+    localStorage.setItem('yakitori_store_name', val);
+    document.getElementById('storeNameInput').style.display = 'none';
+    document.getElementById('storeNameDisplay').style.display = '';
+    loadStoreName();
+  }
+
+  // ---- ページ切り替え ----
+  let currentPage = 'yaki';
+  function switchPage(page) {
+    currentPage = page;
+    document.getElementById('page-yaki').style.display = page === 'yaki' ? '' : 'none';
+    document.getElementById('page-raw').style.display  = page === 'raw'  ? '' : 'none';
+    document.getElementById('tab-yaki').classList.toggle('active', page === 'yaki');
+    document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
+    if (page === 'raw') {
+      document.getElementById('rawDatePicker').value = rawCurrentDate;
+      rawBuildDayTabs();
+      rawRenderTable();
+    }
+  }
+
+  // ---- カスタム品目 ----
+  function updateBaseName(idx) {
+    baseItemDefs[idx].name = document.getElementById(`bname_${idx}`).value;
+    items = buildItems();
+    saveBaseItemDefs();
+  }
+  function updateBaseTarget(idx) {
+    baseItemDefs[idx].target = parseInt(document.getElementById(`btarget_${idx}`).value) || 0;
+    items = buildItems();
+    saveBaseItemDefs();
+  }
+  function updateCustomName(ci) {
+    customItemDefs[ci].name = document.getElementById(`cname_${ci}`).value;
+    items = buildItems();
+    saveCustomItemDefs();
+  }
+  function updateCustomTarget(ci) {
+    customItemDefs[ci].target = parseInt(document.getElementById(`ctarget_${ci}`).value) || 0;
+    items = buildItems();
+    saveCustomItemDefs();
+  }
+
+  // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
+  let rawItemDefs = JSON.parse(localStorage.getItem('yakitori_raw_item_defs') ||
+    JSON.stringify(Array.from({length:10}, () => ({name:'', target:10}))));
+
+  function saveRawItemDefs() {
+    localStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
+  }
+
+  function buildRawItems() {
+    return rawItemDefs.map((d, i) => ({ name: d.name, target: d.target, course: false, rawCustom: true, rawIdx: i }));
+  }
+
+  let rawItems = buildRawItems();
+  let rawCurrentDate = currentDate;
+  let rawOrderDays = 1;
+
+  function rawStorageKey(dateStr) { return `yakitori_raw_${dateStr}`; }
+  function rawLoadDate(dateStr) {
+    const r = localStorage.getItem(rawStorageKey(dateStr));
+    return r ? JSON.parse(r) : null;
+  }
+  function rawSaveDate(dateStr, data) {
+    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
+  }
+  function rawGetCurrentData() {
+    const remaining = rawItems.map((_, i) => parseInt(document.getElementById(`rrem_${i}`)?.value) || 0);
+    const forecast  = rawItems.map((_, i) => parseInt(document.getElementById(`rfore_${i}`)?.value) || 0);
+    const order     = rawItems.map((_, i) => parseInt(document.getElementById(`rord_${i}`)?.value)  || 0);
+    const delivery  = rawItems.map((_, i) => parseInt(document.getElementById(`rdel_${i}`)?.value)  || 0);
+    const stock     = rawItems.map((_, i) => parseInt(document.getElementById(`rsto_${i}`)?.value)  || 0);
+    return { remaining, forecast, order, delivery, stock };
+  }
+  function rawSaveCurrent() {
+    if (!rawCurrentDate) return;
+    rawSaveDate(rawCurrentDate, rawGetCurrentData());
+  }
+
+  function rawSetOrderDays(n) {
+    rawOrderDays = n;
+    [1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === n));
+    rawCalcAll();
+  }
+
+  function rawGetDelivery(dateStr) {
+    const fromDate = addDaysSkipSunday(dateStr, -2);
+    const data = rawLoadDate(fromDate);
+    return { values: data ? data.order : rawItems.map(() => 0), fromDate };
+  }
+
+  function rawGetTomorrowDelivery(idx) {
+    const yesterday = rawLoadDate(addDaysSkipSunday(rawCurrentDate, -1));
+    if (yesterday?.order?.[idx] != null) return yesterday.order[idx];
+    return null;
+  }
+
+  function rawCalcForecast(idx) {
+    const item = rawItems[idx];
+    const coursePeople = parseInt(document.getElementById('rawCoursePeople').value) || 0;
+    const remaining    = parseInt(document.getElementById(`rrem_${idx}`)?.value) || 0;
+    const tomorrowDel  = rawGetTomorrowDelivery(idx) ?? item.target;
+    const need         = item.target * rawOrderDays + coursePeople;
+    const available    = remaining + tomorrowDel - item.target;
+    return Math.max(0, need - available);
+  }
+
+  function rawUpdateStock(idx) {
+    const prevData = rawLoadDate(addDaysSkipSunday(rawCurrentDate, -1));
+    const delVal = parseInt(document.getElementById(`rdel_${idx}`)?.value) || 0;
+    const prevRem = prevData?.remaining?.[idx] || 0;
+    document.getElementById(`rsto_${idx}`).value = delVal + prevRem;
+    rawSaveCurrent();
+  }
+
+  function rawUpdateForecast(idx) {
+    const val = rawCalcForecast(idx);
+    document.getElementById(`rfore_${idx}`).value = val;
+    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    rawOnOrderChange();
+  }
+
+  function rawSyncOrder(idx) {
+    const val = parseInt(document.getElementById(`rfore_${idx}`).value) || 0;
+    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    rawOnOrderChange();
+  }
+
+  function rawOnOrderChange() {
+    rawSaveCurrent();
+    const deliveryDate = addDaysSkipSunday(rawCurrentDate, 2);
+    const deliveryData = rawLoadDate(deliveryDate);
+    if (deliveryData) {
+      deliveryData.delivery = rawGetCurrentData().order;
+      rawSaveDate(deliveryDate, deliveryData);
+    }
+    let skipCount = 0, offset = 1;
+    while (skipCount < rawOrderDays - 1) {
+      const skipDate = addDays(rawCurrentDate, offset++);
+      if (isSunday(skipDate)) continue;
+      skipCount++;
+      const skipData = rawLoadDate(skipDate);
+      if (skipData) { skipData.order = rawItems.map(() => 0); rawSaveDate(skipDate, skipData); }
+      const skipDelDate = addDaysSkipSunday(skipDate, 2);
+      const skipDelData = rawLoadDate(skipDelDate);
+      if (skipDelData) { skipDelData.delivery = rawItems.map(() => 0); rawSaveDate(skipDelDate, skipDelData); }
+    }
+  }
+
+  function rawCalcAll() {
+    rawItems.forEach((_, idx) => {
+      const fval = rawCalcForecast(idx);
+      document.getElementById(`rfore_${idx}`).value = fval;
+      document.getElementById(`rord_${idx}`).value = ceilTo5(fval);
+    });
+    rawOnOrderChange();
+  }
+
+  function rawRenderTable() {
+    const date = rawCurrentDate;
+    const data = rawLoadDate(date);
+    const prevData = rawLoadDate(addDaysSkipSunday(date, -1));
+    const { values: delivery, fromDate } = rawGetDelivery(date);
+    document.getElementById('rawDeliveryFromLabel').textContent = formatLabel(fromDate);
+
+    const body = document.getElementById('rawTableBody');
+    body.innerHTML = '';
+    rawItems.forEach((item, idx) => {
+      const remaining = data?.remaining?.[idx] ?? '';
+      const forecast  = data?.forecast?.[idx] ?? 0;
+      const order     = data?.order?.[idx] ?? '';
+      const delAuto   = delivery[idx] || 0;
+      const savedDel  = data?.delivery?.[idx];
+      const delVal    = savedDel != null ? savedDel : delAuto;
+      const prevRem   = prevData?.remaining?.[idx] || 0;
+      const stockVal  = delVal + prevRem;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="name">🍢 <input type="text" class="custom-name-input" id="riname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateRawItemName(${idx})"> <input type="number" class="custom-target-input" id="ritarget_${idx}" value="${item.target||''}" placeholder="目安" oninput="updateRawItemTarget(${idx})"></td>
+        <td class="delivery-cell"><input type="number" id="rdel_${idx}" min="0" value="${delVal}" placeholder="0" oninput="rawUpdateStock(${idx})"></td>
+        <td class="stock-cell"><input type="number" id="rsto_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
+        <td><input type="number" id="rrem_${idx}" min="0" value="${remaining}" placeholder="0" oninput="rawUpdateForecast(${idx})"></td>
+        <td class="forecast-cell"><input type="number" id="rfore_${idx}" min="0" value="${forecast}" oninput="rawSyncOrder(${idx})"></td>
+        <td class="order-cell"><input type="number" id="rord_${idx}" min="0" value="${order}" placeholder="—" oninput="rawOnOrderChange()"></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function updateRawItemName(idx) {
+    rawItemDefs[idx].name = document.getElementById(`riname_${idx}`).value;
+    rawItems = buildRawItems();
+    saveRawItemDefs();
+  }
+  function updateRawItemTarget(idx) {
+    rawItemDefs[idx].target = parseInt(document.getElementById(`ritarget_${idx}`).value) || 0;
+    rawItems = buildRawItems();
+    saveRawItemDefs();
+  }
+
+  function rawBuildDayTabs() {
+    const monday = getMondayOf(rawCurrentDate);
+    const today  = todayStr();
+    const container = document.getElementById('rawDayTabs');
+    container.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const dateStr = addDays(monday, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const wdIdx = d.getDay();
+      const isClosed = wdIdx === 0;
+      const hasData = !!localStorage.getItem(rawStorageKey(dateStr));
+      const isActive = dateStr === rawCurrentDate;
+      const isToday  = dateStr === today;
+      let cls = 'day-tab';
+      if (isActive) cls += ' active';
+      if (hasData)  cls += ' has-data';
+      if (isToday)  cls += ' today';
+      if (isClosed) cls += ' sun kyuujitsu';
+      if (wdIdx === 6) cls += ' sat';
+      const mm = d.getMonth() + 1, dd = d.getDate();
+      const btn = document.createElement('button');
+      btn.className = cls;
+      btn.innerHTML = isClosed
+        ? `<div class="wd">${WD[wdIdx]}</div><div class="md">${mm}/${dd}</div><div class="rest">定休</div>`
+        : `<div class="wd">${WD[wdIdx]}</div><div class="md">${mm}/${dd}</div>`;
+      btn.onclick = () => {
+        if (isClosed) return;
+        rawSaveCurrent();
+        rawCurrentDate = dateStr;
+        document.getElementById('rawDatePicker').value = rawCurrentDate;
+        rawBuildDayTabs();
+        rawRenderTable();
+      };
+      container.appendChild(btn);
+    }
+  }
+
+  function onRawDateChange() {
+    rawSaveCurrent();
+    rawCurrentDate = document.getElementById('rawDatePicker').value;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawMoveWeek(n) {
+    rawSaveCurrent();
+    rawCurrentDate = addDays(rawCurrentDate, n * 7);
+    document.getElementById('rawDatePicker').value = rawCurrentDate;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawMoveMonth(n) {
+    rawSaveCurrent();
+    const d = new Date(rawCurrentDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + n);
+    rawCurrentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('rawDatePicker').value = rawCurrentDate;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawSaveManual() {
+    rawSaveCurrent();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    rawBuildDayTabs();
+  }
+  function rawClearDay() {
+    if (!confirm(`${formatLabel(rawCurrentDate)} の原料データをリセットしますか？`)) return;
+    localStorage.removeItem(rawStorageKey(rawCurrentDate));
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+
+  // ---- Init ----
+  loadStoreName();
+  document.getElementById('datePicker').value = currentDate;
+  document.getElementById('coursePeople').addEventListener('input', updateCourseBadge);
+  buildDayTabs();
+  renderTable();
+
+  window.addEventListener('beforeunload', () => { saveCurrent(); });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+
+  // ---- カメラ・OCR ----
+
+  function openCamera() {
+    document.getElementById('cameraInput').value = '';
+    document.getElementById('cameraInput').click();
+  }
+
+  function openGallery() {
+    document.getElementById('galleryInput').value = '';
+    document.getElementById('galleryInput').click();
+  }
+
+  async function handleImageCapture(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // プレビュー表示＆モーダル開く
+    const url = URL.createObjectURL(file);
+    document.getElementById('ocrPreview').src = url;
+    document.getElementById('ocrStatus').textContent = '読み取り中... しばらくお待ちください';
+    document.getElementById('ocrRows').innerHTML = '';
+    document.getElementById('ocrOverlay').classList.add('show');
+
+    // Tesseract.js を CDN から動的ロード
+    if (!window.Tesseract) {
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
+    }
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(file, 'jpn+eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            const pct = Math.round(m.progress * 100);
+            document.getElementById('ocrStatus').textContent = `読み取り中... ${pct}%`;
+          }
+        }
+      });
+
+      const numbers = extractNumbers(text);
+      renderOCRRows(numbers);
+      document.getElementById('ocrStatus').textContent =
+        numbers.length > 0
+          ? '数字を確認して「この内容で入力」をタップしてください'
+          : '数字を認識できませんでした。手動で入力してください';
+    } catch (e) {
+      document.getElementById('ocrStatus').textContent = '読み取りに失敗しました。手動で入力してください';
+      renderOCRRows([]);
+    }
+  }
+
+  function extractNumbers(text) {
+    // 行ごとに最初の数字を抽出
+    return text.split('\n')
+      .map(line => { const m = line.match(/\d+/); return m ? parseInt(m[0]) : null; })
+      .filter(n => n !== null && n >= 0 && n <= 9999)
+      .slice(0, items.length);
+  }
+
+  function renderOCRRows(numbers) {
+    const container = document.getElementById('ocrRows');
+    container.innerHTML = '';
+    items.forEach((item, idx) => {
+      const val = numbers[idx] ?? '';
+      const row = document.createElement('div');
+      row.className = 'ocr-row';
+      row.innerHTML = `
+        <span class="item-name">${item.icon} ${item.name}</span>
+        <input type="number" id="ocr_${idx}" min="0" value="${val}" placeholder="—">
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function applyOCR() {
+    items.forEach((_, idx) => {
+      const val = document.getElementById(`ocr_${idx}`)?.value;
+      const field = document.getElementById(`remaining_${idx}`);
+      if (field && val !== '') field.value = val;
+    });
+    saveCurrent();
+    closeOCR();
+  }
+
+  function closeOCR() {
+    document.getElementById('ocrOverlay').classList.remove('show');
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+</script>
+</body>
+</html>
