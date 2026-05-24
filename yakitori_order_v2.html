@@ -1168,8 +1168,8 @@
   let currentPage = 'yaki';
   function switchPage(page) {
     currentPage = page;
-    document.getElementById('page-yaki').style.display = page === 'yaki' ? '' : 'none';
-    document.getElementById('page-raw').style.display  = page === 'raw'  ? '' : 'none';
+    document.getElementById('page-yaki').style.display = page === 'yaki' ? 'block' : 'none';
+    document.getElementById('page-raw').style.display  = page === 'raw'  ? 'block' : 'none';
     document.getElementById('tab-yaki').classList.toggle('active', page === 'yaki');
     document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
     if (page === 'raw') {
