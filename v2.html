@@ -1442,8 +1442,9 @@
 
   window.addEventListener('beforeunload', () => { saveCurrent(); });
 
+  // v2はサービスワーカーを使わず常に最新版を取得
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   }
 
   // ---- カメラ・OCR ----
