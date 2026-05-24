@@ -197,9 +197,10 @@
       font-weight: 600;
       font-size: 0.82rem;
       padding-left: 8px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      overflow: visible;
     }
 
     td.target { color: #888; font-size: 0.8rem; }
@@ -499,7 +500,8 @@
 
     /* カスタム品目の名称・目安入力 */
     .custom-name-input {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       background: transparent;
       border: none;
       border-bottom: 1px dashed #555;
