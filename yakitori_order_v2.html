@@ -785,7 +785,8 @@
     localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
   }
 
-  const baseItems = [
+  // 全品目の名称・目安を編集可能にする（デフォルト値あり）
+  const defaultBaseItems = [
     { name: 'ねぎま',   icon: '🍢', target: 30, course: true  },
     { name: 'むね',     icon: '🍗', target: 10, course: false },
     { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
@@ -797,9 +798,18 @@
     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
   ];
 
+  let baseItemDefs = JSON.parse(localStorage.getItem('yakitori_base_item_defs') ||
+    JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target }))));
+
+  function saveBaseItemDefs() {
+    localStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
+  }
+
+  const baseItems = defaultBaseItems; // 固定プロパティ（icon, course, fixedDeliveryPerDay）用
+
   function buildItems() {
     return [
-      ...baseItems,
+      ...baseItems.map((it, i) => ({ ...it, name: baseItemDefs[i].name, target: baseItemDefs[i].target })),
       { name: customItemDefs[0].name, icon: '🍢', target: customItemDefs[0].target, course: false, custom: true, customIdx: 0 },
       { name: customItemDefs[1].name, icon: '🍢', target: customItemDefs[1].target, course: false, custom: true, customIdx: 1 },
     ];
@@ -1010,7 +1020,7 @@
       const tr = document.createElement('tr');
       const nameCell = item.custom
         ? `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})"> <input type="number" class="custom-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" placeholder="目安" oninput="updateCustomTarget(${item.customIdx})"></td>`
-        : `<td class="name">${item.icon} ${item.name} <span class="item-target">(${item.target})</span></td>`;
+        : `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="bname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateBaseName(${idx})"> <input type="number" class="custom-target-input" id="btarget_${idx}" value="${item.target}" placeholder="目安" oninput="updateBaseTarget(${idx})"></td>`;
       tr.innerHTML = `
         ${nameCell}
         <td class="delivery-cell"><input type="number" id="delivery_${idx}" min="0" value="${delVal}" placeholder="0" oninput="updateStock(${idx})"></td>
@@ -1170,6 +1180,16 @@
   }
 
   // ---- カスタム品目 ----
+  function updateBaseName(idx) {
+    baseItemDefs[idx].name = document.getElementById(`bname_${idx}`).value;
+    items = buildItems();
+    saveBaseItemDefs();
+  }
+  function updateBaseTarget(idx) {
+    baseItemDefs[idx].target = parseInt(document.getElementById(`btarget_${idx}`).value) || 0;
+    items = buildItems();
+    saveBaseItemDefs();
+  }
   function updateCustomName(ci) {
     customItemDefs[ci].name = document.getElementById(`cname_${ci}`).value;
     items = buildItems();
