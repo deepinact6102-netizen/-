@@ -442,14 +442,194 @@
 
     .ocr-apply { background: #f5c842; color: #1a1a1a; }
     .ocr-cancel { background: #333; color: #ccc; }
+
+    /* 店舗名 */
+    .store-name-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .store-name-display {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f0e6d3;
+      cursor: pointer;
+      flex: 1;
+      padding: 4px 0;
+      border-bottom: 1px dashed #555;
+    }
+    .store-name-display.placeholder { color: #555; }
+    .store-name-input {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      background: #2a2a2a;
+      border: 1px solid #f5c842;
+      border-radius: 5px;
+      color: #f0e6d3;
+      outline: none;
+    }
+
+    /* ページタブ */
+    .page-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .page-tab {
+      flex: 1;
+      padding: 9px 4px;
+      border-radius: 7px;
+      border: 1px solid #444;
+      background: #252525;
+      color: #aaa;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .page-tab.active {
+      background: #f5c842;
+      color: #1a1a1a;
+      border-color: #f5c842;
+    }
+
+    /* カスタム品目の名称・目安入力 */
+    .custom-name-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #555;
+      color: #f0e6d3;
+      font-size: 0.82rem;
+      font-weight: 600;
+      outline: none;
+      padding: 2px 0;
+    }
+    .custom-name-input::placeholder { color: #555; }
+    .custom-name-input:focus { border-bottom-color: #f5c842; }
+    .custom-target-input {
+      width: 38px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #555;
+      color: #666;
+      font-size: 0.72rem;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .custom-target-input::-webkit-outer-spin-button,
+    .custom-target-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .custom-target-input:focus { border-bottom-color: #f5c842; }
+
+    /* 原料発注ページ */
+    #page-raw { display: none; }
+    .raw-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .raw-header h2 {
+      font-size: 0.95rem;
+      color: #f5c842;
+    }
+    .raw-table-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      margin-bottom: 12px;
+    }
+    .raw-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      table-layout: fixed;
+    }
+    .raw-table thead tr { background: #2e2e2e; }
+    .raw-table thead th {
+      padding: 7px 4px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #f5c842;
+      border-bottom: 2px solid #444;
+    }
+    .raw-table thead th:first-child { text-align: left; padding-left: 8px; }
+    .raw-table tbody tr { border-bottom: 1px solid #2a2a2a; }
+    .raw-table tbody tr:last-child { border-bottom: none; }
+    .raw-table td {
+      padding: 5px 3px;
+      vertical-align: middle;
+      text-align: center;
+    }
+    .raw-table td:first-child { padding-left: 6px; }
+    .raw-table th:nth-child(1), .raw-table td:nth-child(1) { width: 32%; }
+    .raw-table th:nth-child(2), .raw-table td:nth-child(2) { width: 16%; }
+    .raw-table th:nth-child(3), .raw-table td:nth-child(3) { width: 20%; }
+    .raw-table th:nth-child(4), .raw-table td:nth-child(4) { width: 26%; }
+    .raw-table th:nth-child(5), .raw-table td:nth-child(5) { width: 6%; }
+    .raw-table td input[type="text"],
+    .raw-table td input[type="number"] {
+      width: 100%;
+      padding: 5px 3px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #f0e6d3;
+      font-size: 0.82rem;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .raw-table td:first-child input { text-align: left; }
+    .raw-table td input:focus { border-color: #f5c842; }
+    .raw-table td input[type="number"]::-webkit-outer-spin-button,
+    .raw-table td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .raw-del-btn {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px;
+    }
+    .raw-del-btn:active { color: #e06060; }
+    .btn-add-row {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed #555;
+      background: #1e1e1e;
+      color: #aaa;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .btn-add-row:active { background: #252525; }
   </style>
 </head>
 <body>
 
 <h1>🍢 焼き鳥 発注表</h1>
-<div style="font-size:0.68rem;color:#555;margin-bottom:10px;word-break:break-all;">
-  🔗 <a href="https://deepinact6102-netizen.github.io/-/" style="color:#4a90d9;">https://deepinact6102-netizen.github.io/-/</a>
+
+<!-- 店舗名 -->
+<div class="store-name-bar">
+  <div id="storeNameDisplay" class="store-name-display placeholder" onclick="startEditStoreName()">店舗名を入力してください</div>
+  <input type="text" id="storeNameInput" class="store-name-input" style="display:none" placeholder="店舗名" onblur="saveStoreName()" onkeydown="if(event.key==='Enter')saveStoreName()">
 </div>
+
+<!-- ページタブ -->
+<div class="page-tabs">
+  <button class="page-tab active" id="tab-yaki" onclick="switchPage('yaki')">🍢 焼き鳥発注</button>
+  <button class="page-tab" id="tab-raw" onclick="switchPage('raw')">📦 原料発注</button>
+</div>
+
+<!-- 焼き鳥発注ページ -->
+<div id="page-yaki">
 
 <div class="week-nav">
   <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
@@ -532,10 +712,57 @@
   ※ 発注数は予想数と同じ値がセットされます。最後に手動で調整してください
 </div>
 
+</div><!-- /page-yaki -->
+
+<!-- 原料発注ページ -->
+<div id="page-raw">
+  <div class="raw-header">
+    <h2>📦 原料発注</h2>
+  </div>
+
+  <!-- 日付ナビ（原料ページ用） -->
+  <div class="week-nav" style="margin-bottom:8px;">
+    <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
+    <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
+    <input type="date" id="rawDatePicker" onchange="onRawDateChange()">
+    <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
+    <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
+  </div>
+  <div class="day-tabs" id="rawDayTabs"></div>
+
+  <div class="raw-table-wrapper">
+    <table class="raw-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:8px;">品目名</th>
+          <th>単位</th>
+          <th>発注量</th>
+          <th>メモ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rawTableBody"></tbody>
+    </table>
+  </div>
+  <button class="btn-add-row" onclick="addRawRow()">＋ 行を追加</button>
+
+  <div class="buttons">
+    <button class="btn btn-save" style="grid-column:span 2;" onclick="saveRaw()">💾 保存</button>
+    <button class="btn btn-reset" onclick="clearRaw()">リセット</button>
+  </div>
+</div><!-- /page-raw -->
+
 <div class="toast" id="toast">保存しました</div>
 
 <script>
-  const items = [
+  // カスタム品目（名称・目安を自由記入）
+  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15},{"name":"","target":15}]');
+
+  function saveCustomItemDefs() {
+    localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
+  }
+
+  const baseItems = [
     { name: 'ねぎま',   icon: '🍢', target: 30, course: true  },
     { name: 'むね',     icon: '🍗', target: 10, course: false },
     { name: 'ぼんじり', icon: '🍢', target: 30, course: false },
@@ -546,6 +773,16 @@
     { name: '砂肝',    icon: '🍢', target: 15, course: false },
     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
   ];
+
+  function buildItems() {
+    return [
+      ...baseItems,
+      { name: customItemDefs[0].name, icon: '🍢', target: customItemDefs[0].target, course: false, custom: true, customIdx: 0 },
+      { name: customItemDefs[1].name, icon: '🍢', target: customItemDefs[1].target, course: false, custom: true, customIdx: 1 },
+    ];
+  }
+
+  let items = buildItems();
 
   let orderDays = 1;
 
@@ -562,7 +799,8 @@
     const people = parseInt(document.getElementById('coursePeople')?.value) || 0;
     const badge = document.getElementById('courseBadge');
     if (!badge) return;
-    badge.textContent = people > 0 ? `ねぎま・ハツ・ささみ +${people}本` : '';
+    const courseNames = items.filter(it => it.course).map(it => it.name || '追加品目').join('・');
+    badge.textContent = people > 0 ? `${courseNames} +${people}本` : '';
     calcAll();
   }
 
@@ -747,8 +985,11 @@
       const stockVal      = delVal + prevRemaining;
 
       const tr = document.createElement('tr');
+      const nameCell = item.custom
+        ? `<td class="name">${item.icon} <input type="text" class="custom-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})"> <input type="number" class="custom-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" placeholder="目安" oninput="updateCustomTarget(${item.customIdx})"></td>`
+        : `<td class="name">${item.icon} ${item.name} <span class="item-target">(${item.target})</span></td>`;
       tr.innerHTML = `
-        <td class="name">${item.icon} ${item.name} <span class="item-target">(${item.target})</span></td>
+        ${nameCell}
         <td class="delivery-cell"><input type="number" id="delivery_${idx}" min="0" value="${delVal}" placeholder="0" oninput="updateStock(${idx})"></td>
         <td class="stock-cell"><input type="number" id="stock_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
         <td><input type="number" id="remaining_${idx}" min="0" value="${remaining}" placeholder="0" oninput="updateForecast(${idx})"></td>
@@ -862,13 +1103,172 @@
     renderTable();
   }
 
-  // Init
+  // ---- 店舗名 ----
+  function loadStoreName() {
+    const name = localStorage.getItem('yakitori_store_name') || '';
+    const disp = document.getElementById('storeNameDisplay');
+    if (name) {
+      disp.textContent = name;
+      disp.classList.remove('placeholder');
+    } else {
+      disp.textContent = '店舗名を入力してください';
+      disp.classList.add('placeholder');
+    }
+  }
+  function startEditStoreName() {
+    const name = localStorage.getItem('yakitori_store_name') || '';
+    const input = document.getElementById('storeNameInput');
+    input.value = name;
+    document.getElementById('storeNameDisplay').style.display = 'none';
+    input.style.display = '';
+    input.focus();
+  }
+  function saveStoreName() {
+    const val = document.getElementById('storeNameInput').value.trim();
+    localStorage.setItem('yakitori_store_name', val);
+    document.getElementById('storeNameInput').style.display = 'none';
+    document.getElementById('storeNameDisplay').style.display = '';
+    loadStoreName();
+  }
+
+  // ---- ページ切り替え ----
+  let currentPage = 'yaki';
+  function switchPage(page) {
+    currentPage = page;
+    document.getElementById('page-yaki').style.display = page === 'yaki' ? '' : 'none';
+    document.getElementById('page-raw').style.display  = page === 'raw'  ? '' : 'none';
+    document.getElementById('tab-yaki').classList.toggle('active', page === 'yaki');
+    document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
+    if (page === 'raw') renderRawPage();
+  }
+
+  // ---- カスタム品目 ----
+  function updateCustomName(ci) {
+    customItemDefs[ci].name = document.getElementById(`cname_${ci}`).value;
+    items = buildItems();
+    saveCustomItemDefs();
+  }
+  function updateCustomTarget(ci) {
+    customItemDefs[ci].target = parseInt(document.getElementById(`ctarget_${ci}`).value) || 0;
+    items = buildItems();
+    saveCustomItemDefs();
+  }
+
+  // ---- 原料発注ページ ----
+  let rawDate = currentDate;
+  function rawStorageKey(dateStr) { return `yakitori_raw_${dateStr}`; }
+  function loadRaw(dateStr) {
+    const raw = localStorage.getItem(rawStorageKey(dateStr));
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveRawDate(dateStr, rows) {
+    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(rows));
+  }
+
+  function getRawRows() {
+    const tbody = document.getElementById('rawTableBody');
+    const rows = [];
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      rows.push({
+        name:  tr.querySelector('.raw-name')?.value  || '',
+        unit:  tr.querySelector('.raw-unit')?.value  || '',
+        qty:   tr.querySelector('.raw-qty')?.value   || '',
+        memo:  tr.querySelector('.raw-memo')?.value  || '',
+      });
+    });
+    return rows;
+  }
+
+  function saveRaw() {
+    saveRawDate(rawDate, getRawRows());
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    buildRawDayTabs();
+  }
+
+  function clearRaw() {
+    if (!confirm(`${formatLabel(rawDate)} の原料データをリセットしますか？`)) return;
+    localStorage.removeItem(rawStorageKey(rawDate));
+    renderRawPage();
+    buildRawDayTabs();
+  }
+
+  function addRawRow(data = {}) {
+    const tbody = document.getElementById('rawTableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="raw-name" value="${data.name||''}" placeholder="品目名"></td>
+      <td><input type="text" class="raw-unit" value="${data.unit||''}" placeholder="kg/個"></td>
+      <td><input type="number" class="raw-qty"  value="${data.qty||''}"  placeholder="0"></td>
+      <td><input type="text" class="raw-memo" value="${data.memo||''}" placeholder="メモ"></td>
+      <td><button class="raw-del-btn" onclick="this.closest('tr').remove()">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  function renderRawPage() {
+    document.getElementById('rawDatePicker').value = rawDate;
+    const rows = loadRaw(rawDate);
+    const tbody = document.getElementById('rawTableBody');
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+      addRawRow();
+    } else {
+      rows.forEach(r => addRawRow(r));
+    }
+    buildRawDayTabs();
+  }
+
+  function onRawDateChange() {
+    saveRawDate(rawDate, getRawRows());
+    rawDate = document.getElementById('rawDatePicker').value;
+    renderRawPage();
+  }
+
+  function buildRawDayTabs() {
+    const monday = getMondayOf(rawDate);
+    const today  = todayStr();
+    const container = document.getElementById('rawDayTabs');
+    container.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const dateStr = addDays(monday, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const wdIdx = d.getDay();
+      const isClosed = wdIdx === 0;
+      const hasData = !!localStorage.getItem(rawStorageKey(dateStr));
+      const isActive = dateStr === rawDate;
+      const isToday  = dateStr === today;
+      let cls = 'day-tab';
+      if (isActive)  cls += ' active';
+      if (hasData)   cls += ' has-data';
+      if (isToday)   cls += ' today';
+      if (isClosed)  cls += ' sun kyuujitsu';
+      if (wdIdx === 6) cls += ' sat';
+      const mm = d.getMonth() + 1, dd = d.getDate();
+      const btn = document.createElement('button');
+      btn.className = cls;
+      btn.innerHTML = isClosed
+        ? `<div class="wd">${WD[wdIdx]}</div><div class="md">${mm}/${dd}</div><div class="rest">定休</div>`
+        : `<div class="wd">${WD[wdIdx]}</div><div class="md">${mm}/${dd}</div>`;
+      btn.onclick = () => {
+        if (isClosed) return;
+        saveRawDate(rawDate, getRawRows());
+        rawDate = dateStr;
+        renderRawPage();
+      };
+      container.appendChild(btn);
+    }
+  }
+
+  // ---- Init ----
+  loadStoreName();
   document.getElementById('datePicker').value = currentDate;
   document.getElementById('coursePeople').addEventListener('input', updateCourseBadge);
   buildDayTabs();
   renderTable();
 
-  window.addEventListener('beforeunload', saveCurrent);
+  window.addEventListener('beforeunload', () => { saveCurrent(); });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
