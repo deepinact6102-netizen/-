@@ -716,40 +716,63 @@
 
 <!-- 原料発注ページ -->
 <div id="page-raw">
-  <div class="raw-header">
-    <h2>📦 原料発注</h2>
-  </div>
 
-  <!-- 日付ナビ（原料ページ用） -->
-  <div class="week-nav" style="margin-bottom:8px;">
-    <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
-    <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
-    <input type="date" id="rawDatePicker" onchange="onRawDateChange()">
-    <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
-    <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
-  </div>
-  <div class="day-tabs" id="rawDayTabs"></div>
+<div class="week-nav">
+  <button class="nav-btn" onclick="rawMoveMonth(-1)">«前月</button>
+  <button class="nav-btn" onclick="rawMoveWeek(-1)">◀前週</button>
+  <input type="date" id="rawDatePicker" onchange="onRawDateChange()">
+  <button class="nav-btn" onclick="rawMoveWeek(1)">翌週▶</button>
+  <button class="nav-btn" onclick="rawMoveMonth(1)">翌月»</button>
+</div>
 
-  <div class="raw-table-wrapper">
-    <table class="raw-table">
-      <thead>
-        <tr>
-          <th style="text-align:left;padding-left:8px;">品目名</th>
-          <th>単位</th>
-          <th>発注量</th>
-          <th>メモ</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="rawTableBody"></tbody>
-    </table>
-  </div>
-  <button class="btn-add-row" onclick="addRawRow()">＋ 行を追加</button>
+<div class="day-tabs" id="rawDayTabs"></div>
 
-  <div class="buttons">
-    <button class="btn btn-save" style="grid-column:span 2;" onclick="saveRaw()">💾 保存</button>
-    <button class="btn btn-reset" onclick="clearRaw()">リセット</button>
+<div class="info-bar">
+  納品欄は <span id="rawDeliveryFromLabel">—</span> の発注数（中1日）
+</div>
+
+<div class="options-panel">
+  <div class="option-group">
+    <span class="option-label">注文日数</span>
+    <div class="day-toggle">
+      <button id="rdays1" class="active" onclick="rawSetOrderDays(1)">1日</button>
+      <button id="rdays2" onclick="rawSetOrderDays(2)">2日</button>
+      <button id="rdays3" onclick="rawSetOrderDays(3)">3日</button>
+    </div>
   </div>
+  <div class="option-group">
+    <span class="option-label">コース人数</span>
+    <input type="number" class="course-input" id="rawCoursePeople" min="0" value="0" placeholder="0">
+    <span class="option-label">人</span>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>名称（目安）</th>
+        <th>納品</th>
+        <th>在庫数</th>
+        <th>残数</th>
+        <th>予想</th>
+        <th>発注</th>
+      </tr>
+    </thead>
+    <tbody id="rawTableBody"></tbody>
+  </table>
+</div>
+
+<div class="buttons">
+  <button class="btn btn-calc" onclick="rawCalcAll()">予想数を計算</button>
+  <button class="btn btn-save" onclick="rawSaveManual()">💾 保存</button>
+  <button class="btn btn-reset" onclick="rawClearDay()">リセット</button>
+</div>
+
+<div class="footer-note">
+  ※ 予想 ＝ (1日目安×注文日数＋コース人数) − (残数＋翌日納品−1日目安)
+</div>
+
 </div><!-- /page-raw -->
 
 <div class="toast" id="toast">保存しました</div>
@@ -1139,7 +1162,11 @@
     document.getElementById('page-raw').style.display  = page === 'raw'  ? '' : 'none';
     document.getElementById('tab-yaki').classList.toggle('active', page === 'yaki');
     document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
-    if (page === 'raw') renderRawPage();
+    if (page === 'raw') {
+      document.getElementById('rawDatePicker').value = rawCurrentDate;
+      rawBuildDayTabs();
+      rawRenderTable();
+    }
   }
 
   // ---- カスタム品目 ----
@@ -1154,80 +1181,166 @@
     saveCustomItemDefs();
   }
 
-  // ---- 原料発注ページ ----
-  let rawDate = currentDate;
+  // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
+  let rawItemDefs = JSON.parse(localStorage.getItem('yakitori_raw_item_defs') ||
+    JSON.stringify(Array.from({length:10}, () => ({name:'', target:10}))));
+
+  function saveRawItemDefs() {
+    localStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
+  }
+
+  function buildRawItems() {
+    return rawItemDefs.map((d, i) => ({ name: d.name, target: d.target, course: false, rawCustom: true, rawIdx: i }));
+  }
+
+  let rawItems = buildRawItems();
+  let rawCurrentDate = currentDate;
+  let rawOrderDays = 1;
+
   function rawStorageKey(dateStr) { return `yakitori_raw_${dateStr}`; }
-  function loadRaw(dateStr) {
-    const raw = localStorage.getItem(rawStorageKey(dateStr));
-    return raw ? JSON.parse(raw) : [];
+  function rawLoadDate(dateStr) {
+    const r = localStorage.getItem(rawStorageKey(dateStr));
+    return r ? JSON.parse(r) : null;
   }
-  function saveRawDate(dateStr, rows) {
-    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(rows));
+  function rawSaveDate(dateStr, data) {
+    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
   }
-
-  function getRawRows() {
-    const tbody = document.getElementById('rawTableBody');
-    const rows = [];
-    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-      rows.push({
-        name:  tr.querySelector('.raw-name')?.value  || '',
-        unit:  tr.querySelector('.raw-unit')?.value  || '',
-        qty:   tr.querySelector('.raw-qty')?.value   || '',
-        memo:  tr.querySelector('.raw-memo')?.value  || '',
-      });
-    });
-    return rows;
+  function rawGetCurrentData() {
+    const remaining = rawItems.map((_, i) => parseInt(document.getElementById(`rrem_${i}`)?.value) || 0);
+    const forecast  = rawItems.map((_, i) => parseInt(document.getElementById(`rfore_${i}`)?.value) || 0);
+    const order     = rawItems.map((_, i) => parseInt(document.getElementById(`rord_${i}`)?.value)  || 0);
+    const delivery  = rawItems.map((_, i) => parseInt(document.getElementById(`rdel_${i}`)?.value)  || 0);
+    const stock     = rawItems.map((_, i) => parseInt(document.getElementById(`rsto_${i}`)?.value)  || 0);
+    return { remaining, forecast, order, delivery, stock };
+  }
+  function rawSaveCurrent() {
+    if (!rawCurrentDate) return;
+    rawSaveDate(rawCurrentDate, rawGetCurrentData());
   }
 
-  function saveRaw() {
-    saveRawDate(rawDate, getRawRows());
-    const toast = document.getElementById('toast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
-    buildRawDayTabs();
+  function rawSetOrderDays(n) {
+    rawOrderDays = n;
+    [1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === n));
+    rawCalcAll();
   }
 
-  function clearRaw() {
-    if (!confirm(`${formatLabel(rawDate)} の原料データをリセットしますか？`)) return;
-    localStorage.removeItem(rawStorageKey(rawDate));
-    renderRawPage();
-    buildRawDayTabs();
+  function rawGetDelivery(dateStr) {
+    const fromDate = addDaysSkipSunday(dateStr, -2);
+    const data = rawLoadDate(fromDate);
+    return { values: data ? data.order : rawItems.map(() => 0), fromDate };
   }
 
-  function addRawRow(data = {}) {
-    const tbody = document.getElementById('rawTableBody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" class="raw-name" value="${data.name||''}" placeholder="品目名"></td>
-      <td><input type="text" class="raw-unit" value="${data.unit||''}" placeholder="kg/個"></td>
-      <td><input type="number" class="raw-qty"  value="${data.qty||''}"  placeholder="0"></td>
-      <td><input type="text" class="raw-memo" value="${data.memo||''}" placeholder="メモ"></td>
-      <td><button class="raw-del-btn" onclick="this.closest('tr').remove()">✕</button></td>
-    `;
-    tbody.appendChild(tr);
+  function rawGetTomorrowDelivery(idx) {
+    const yesterday = rawLoadDate(addDaysSkipSunday(rawCurrentDate, -1));
+    if (yesterday?.order?.[idx] != null) return yesterday.order[idx];
+    return null;
   }
 
-  function renderRawPage() {
-    document.getElementById('rawDatePicker').value = rawDate;
-    const rows = loadRaw(rawDate);
-    const tbody = document.getElementById('rawTableBody');
-    tbody.innerHTML = '';
-    if (rows.length === 0) {
-      addRawRow();
-    } else {
-      rows.forEach(r => addRawRow(r));
+  function rawCalcForecast(idx) {
+    const item = rawItems[idx];
+    const coursePeople = parseInt(document.getElementById('rawCoursePeople').value) || 0;
+    const remaining    = parseInt(document.getElementById(`rrem_${idx}`)?.value) || 0;
+    const tomorrowDel  = rawGetTomorrowDelivery(idx) ?? item.target;
+    const need         = item.target * rawOrderDays + coursePeople;
+    const available    = remaining + tomorrowDel - item.target;
+    return Math.max(0, need - available);
+  }
+
+  function rawUpdateStock(idx) {
+    const prevData = rawLoadDate(addDaysSkipSunday(rawCurrentDate, -1));
+    const delVal = parseInt(document.getElementById(`rdel_${idx}`)?.value) || 0;
+    const prevRem = prevData?.remaining?.[idx] || 0;
+    document.getElementById(`rsto_${idx}`).value = delVal + prevRem;
+    rawSaveCurrent();
+  }
+
+  function rawUpdateForecast(idx) {
+    const val = rawCalcForecast(idx);
+    document.getElementById(`rfore_${idx}`).value = val;
+    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    rawOnOrderChange();
+  }
+
+  function rawSyncOrder(idx) {
+    const val = parseInt(document.getElementById(`rfore_${idx}`).value) || 0;
+    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    rawOnOrderChange();
+  }
+
+  function rawOnOrderChange() {
+    rawSaveCurrent();
+    const deliveryDate = addDaysSkipSunday(rawCurrentDate, 2);
+    const deliveryData = rawLoadDate(deliveryDate);
+    if (deliveryData) {
+      deliveryData.delivery = rawGetCurrentData().order;
+      rawSaveDate(deliveryDate, deliveryData);
     }
-    buildRawDayTabs();
+    let skipCount = 0, offset = 1;
+    while (skipCount < rawOrderDays - 1) {
+      const skipDate = addDays(rawCurrentDate, offset++);
+      if (isSunday(skipDate)) continue;
+      skipCount++;
+      const skipData = rawLoadDate(skipDate);
+      if (skipData) { skipData.order = rawItems.map(() => 0); rawSaveDate(skipDate, skipData); }
+      const skipDelDate = addDaysSkipSunday(skipDate, 2);
+      const skipDelData = rawLoadDate(skipDelDate);
+      if (skipDelData) { skipDelData.delivery = rawItems.map(() => 0); rawSaveDate(skipDelDate, skipDelData); }
+    }
   }
 
-  function onRawDateChange() {
-    saveRawDate(rawDate, getRawRows());
-    rawDate = document.getElementById('rawDatePicker').value;
-    renderRawPage();
+  function rawCalcAll() {
+    rawItems.forEach((_, idx) => {
+      const fval = rawCalcForecast(idx);
+      document.getElementById(`rfore_${idx}`).value = fval;
+      document.getElementById(`rord_${idx}`).value = ceilTo5(fval);
+    });
+    rawOnOrderChange();
   }
 
-  function buildRawDayTabs() {
-    const monday = getMondayOf(rawDate);
+  function rawRenderTable() {
+    const date = rawCurrentDate;
+    const data = rawLoadDate(date);
+    const prevData = rawLoadDate(addDaysSkipSunday(date, -1));
+    const { values: delivery, fromDate } = rawGetDelivery(date);
+    document.getElementById('rawDeliveryFromLabel').textContent = formatLabel(fromDate);
+
+    const body = document.getElementById('rawTableBody');
+    body.innerHTML = '';
+    rawItems.forEach((item, idx) => {
+      const remaining = data?.remaining?.[idx] ?? '';
+      const forecast  = data?.forecast?.[idx] ?? 0;
+      const order     = data?.order?.[idx] ?? '';
+      const delAuto   = delivery[idx] || 0;
+      const savedDel  = data?.delivery?.[idx];
+      const delVal    = savedDel != null ? savedDel : delAuto;
+      const prevRem   = prevData?.remaining?.[idx] || 0;
+      const stockVal  = delVal + prevRem;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="name">🍢 <input type="text" class="custom-name-input" id="riname_${idx}" value="${item.name}" placeholder="品目名" oninput="updateRawItemName(${idx})"> <input type="number" class="custom-target-input" id="ritarget_${idx}" value="${item.target||''}" placeholder="目安" oninput="updateRawItemTarget(${idx})"></td>
+        <td class="delivery-cell"><input type="number" id="rdel_${idx}" min="0" value="${delVal}" placeholder="0" oninput="rawUpdateStock(${idx})"></td>
+        <td class="stock-cell"><input type="number" id="rsto_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
+        <td><input type="number" id="rrem_${idx}" min="0" value="${remaining}" placeholder="0" oninput="rawUpdateForecast(${idx})"></td>
+        <td class="forecast-cell"><input type="number" id="rfore_${idx}" min="0" value="${forecast}" oninput="rawSyncOrder(${idx})"></td>
+        <td class="order-cell"><input type="number" id="rord_${idx}" min="0" value="${order}" placeholder="—" oninput="rawOnOrderChange()"></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function updateRawItemName(idx) {
+    rawItemDefs[idx].name = document.getElementById(`riname_${idx}`).value;
+    rawItems = buildRawItems();
+    saveRawItemDefs();
+  }
+  function updateRawItemTarget(idx) {
+    rawItemDefs[idx].target = parseInt(document.getElementById(`ritarget_${idx}`).value) || 0;
+    rawItems = buildRawItems();
+    saveRawItemDefs();
+  }
+
+  function rawBuildDayTabs() {
+    const monday = getMondayOf(rawCurrentDate);
     const today  = todayStr();
     const container = document.getElementById('rawDayTabs');
     container.innerHTML = '';
@@ -1237,13 +1350,13 @@
       const wdIdx = d.getDay();
       const isClosed = wdIdx === 0;
       const hasData = !!localStorage.getItem(rawStorageKey(dateStr));
-      const isActive = dateStr === rawDate;
+      const isActive = dateStr === rawCurrentDate;
       const isToday  = dateStr === today;
       let cls = 'day-tab';
-      if (isActive)  cls += ' active';
-      if (hasData)   cls += ' has-data';
-      if (isToday)   cls += ' today';
-      if (isClosed)  cls += ' sun kyuujitsu';
+      if (isActive) cls += ' active';
+      if (hasData)  cls += ' has-data';
+      if (isToday)  cls += ' today';
+      if (isClosed) cls += ' sun kyuujitsu';
       if (wdIdx === 6) cls += ' sat';
       const mm = d.getMonth() + 1, dd = d.getDate();
       const btn = document.createElement('button');
@@ -1253,12 +1366,50 @@
         : `<div class="wd">${WD[wdIdx]}</div><div class="md">${mm}/${dd}</div>`;
       btn.onclick = () => {
         if (isClosed) return;
-        saveRawDate(rawDate, getRawRows());
-        rawDate = dateStr;
-        renderRawPage();
+        rawSaveCurrent();
+        rawCurrentDate = dateStr;
+        document.getElementById('rawDatePicker').value = rawCurrentDate;
+        rawBuildDayTabs();
+        rawRenderTable();
       };
       container.appendChild(btn);
     }
+  }
+
+  function onRawDateChange() {
+    rawSaveCurrent();
+    rawCurrentDate = document.getElementById('rawDatePicker').value;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawMoveWeek(n) {
+    rawSaveCurrent();
+    rawCurrentDate = addDays(rawCurrentDate, n * 7);
+    document.getElementById('rawDatePicker').value = rawCurrentDate;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawMoveMonth(n) {
+    rawSaveCurrent();
+    const d = new Date(rawCurrentDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + n);
+    rawCurrentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('rawDatePicker').value = rawCurrentDate;
+    rawBuildDayTabs();
+    rawRenderTable();
+  }
+  function rawSaveManual() {
+    rawSaveCurrent();
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+    rawBuildDayTabs();
+  }
+  function rawClearDay() {
+    if (!confirm(`${formatLabel(rawCurrentDate)} の原料データをリセットしますか？`)) return;
+    localStorage.removeItem(rawStorageKey(rawCurrentDate));
+    rawBuildDayTabs();
+    rawRenderTable();
   }
 
   // ---- Init ----
