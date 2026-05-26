@@ -578,6 +578,24 @@
       outline: none;
     }
     .settings-unit-input:focus { border-color: #f5c842; }
+    .settings-course-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .settings-course-wrap span {
+      font-size: 0.58rem;
+      color: #888;
+      white-space: nowrap;
+    }
+    .settings-course-wrap input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #f5c842;
+    }
 
     /* 原料発注ページ */
     #page-raw { display: none; }
@@ -839,7 +857,8 @@
 
 <script>
   // カスタム品目（名称・目安を自由記入）
-  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15},{"name":"","target":15}]');
+  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
+  customItemDefs = customItemDefs.map(d => ({ course: false, ...d }));
 
   function saveCustomItemDefs() {
     localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
@@ -859,7 +878,9 @@
   ];
 
   let baseItemDefs = JSON.parse(localStorage.getItem('yakitori_base_item_defs') ||
-    JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target }))));
+    JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target, course: it.course }))));
+  // 既存データに course が無い場合は defaultBaseItems の値で補完
+  baseItemDefs = baseItemDefs.map((d, i) => ({ course: defaultBaseItems[i].course, ...d }));
 
   function saveBaseItemDefs() {
     localStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
@@ -869,9 +890,9 @@
 
   function buildItems() {
     return [
-      ...baseItems.map((it, i) => ({ ...it, name: baseItemDefs[i].name, target: baseItemDefs[i].target })),
-      { name: customItemDefs[0].name, icon: '🍢', target: customItemDefs[0].target, course: false, custom: true, customIdx: 0 },
-      { name: customItemDefs[1].name, icon: '🍢', target: customItemDefs[1].target, course: false, custom: true, customIdx: 1 },
+      ...baseItems.map((it, i) => ({ ...it, name: baseItemDefs[i].name, target: baseItemDefs[i].target, course: baseItemDefs[i].course })),
+      { name: customItemDefs[0].name, icon: '🍢', target: customItemDefs[0].target, course: !!customItemDefs[0].course, custom: true, customIdx: 0 },
+      { name: customItemDefs[1].name, icon: '🍢', target: customItemDefs[1].target, course: !!customItemDefs[1].course, custom: true, customIdx: 1 },
     ];
   }
 
@@ -1251,12 +1272,17 @@
     const panel = document.getElementById('settingsPanel');
     panel.innerHTML = items.map((item, idx) => {
       if (item.custom) {
+        const ci = item.customIdx;
         return `<div class="settings-item-row">
           <span class="settings-icon">${item.icon}</span>
-          <input type="text" class="settings-name-input" id="cname_${item.customIdx}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${item.customIdx})">
+          <input type="text" class="settings-name-input" id="cname_${ci}" value="${item.name}" placeholder="品目名" oninput="updateCustomName(${ci})">
           <span class="settings-lbl">目安</span>
-          <input type="number" class="settings-target-input" id="ctarget_${item.customIdx}" value="${item.target || ''}" oninput="updateCustomTarget(${item.customIdx})">
+          <input type="number" class="settings-target-input" id="ctarget_${ci}" value="${item.target || ''}" oninput="updateCustomTarget(${ci})">
           <span class="settings-lbl">本</span>
+          <div class="settings-course-wrap">
+            <span>コース</span>
+            <input type="checkbox" id="ccourse_${ci}" ${item.course ? 'checked' : ''} onchange="updateCustomCourse(${ci})">
+          </div>
         </div>`;
       } else {
         return `<div class="settings-item-row">
@@ -1265,6 +1291,10 @@
           <span class="settings-lbl">目安</span>
           <input type="number" class="settings-target-input" id="btarget_${idx}" value="${item.target}" oninput="updateBaseTarget(${idx})">
           <span class="settings-lbl">本</span>
+          <div class="settings-course-wrap">
+            <span>コース</span>
+            <input type="checkbox" id="bcourse_${idx}" ${item.course ? 'checked' : ''} onchange="updateBaseCourse(${idx})">
+          </div>
         </div>`;
       }
     }).join('');
@@ -1296,6 +1326,20 @@
     customItemDefs[ci].target = parseInt(document.getElementById(`ctarget_${ci}`).value) || 0;
     items = buildItems();
     saveCustomItemDefs();
+    renderTable();
+  }
+  function updateBaseCourse(idx) {
+    baseItemDefs[idx].course = document.getElementById(`bcourse_${idx}`).checked;
+    items = buildItems();
+    saveBaseItemDefs();
+    updateCourseBadge();
+    renderTable();
+  }
+  function updateCustomCourse(ci) {
+    customItemDefs[ci].course = document.getElementById(`ccourse_${ci}`).checked;
+    items = buildItems();
+    saveCustomItemDefs();
+    updateCourseBadge();
     renderTable();
   }
 
