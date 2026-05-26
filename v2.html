@@ -1530,15 +1530,37 @@
     [0,1,2,3].forEach(i => document.getElementById(`calOrd${i}`).classList.toggle('active', i === n));
   }
   function saveCalSheet() {
-    planData[_sheetDate] = { ..._sheetPlan };
-    // 2日分→翌日発注なし、3日分→翌2日発注なし
+    // undo previously auto-set skip days before applying new setting
+    const prevPlan = planData[_sheetDate];
+    if (prevPlan?.orderDays >= 2) {
+      const d1 = nextNonSunday(_sheetDate);
+      if (planData[d1]?._auto) {
+        const { _auto, ...rest } = planData[d1];
+        const restored = { ...rest, orderDays: 1 };
+        if (!restored.storeHoliday && !restored.supplierHoliday && restored.orderDays === 1) delete planData[d1];
+        else planData[d1] = restored;
+      }
+    }
+    if (prevPlan?.orderDays >= 3) {
+      const d2 = nextNonSunday(nextNonSunday(_sheetDate));
+      if (planData[d2]?._auto) {
+        const { _auto, ...rest } = planData[d2];
+        const restored = { ...rest, orderDays: 1 };
+        if (!restored.storeHoliday && !restored.supplierHoliday && restored.orderDays === 1) delete planData[d2];
+        else planData[d2] = restored;
+      }
+    }
+    // save current day (strip _auto since user is explicitly setting this day)
+    const { _auto: _ignore, ...sheetPlanClean } = _sheetPlan;
+    planData[_sheetDate] = { ...sheetPlanClean };
+    // 2日分→翌日発注なし、3日分→翌2日発注なし (mark as auto so they can be undone)
     if (_sheetPlan.orderDays >= 2) {
       const d1 = nextNonSunday(_sheetDate);
-      planData[d1] = { ...getPlan(d1), orderDays: 0 };
+      planData[d1] = { ...getPlan(d1), orderDays: 0, _auto: true };
     }
     if (_sheetPlan.orderDays >= 3) {
       const d2 = nextNonSunday(nextNonSunday(_sheetDate));
-      planData[d2] = { ...getPlan(d2), orderDays: 0 };
+      planData[d2] = { ...getPlan(d2), orderDays: 0, _auto: true };
     }
     savePlanData();
     closeCalSheet();
