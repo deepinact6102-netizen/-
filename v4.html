@@ -658,29 +658,94 @@
     .cal-badge.order    { background: #2e2400; color: #f5c842; }
     .cal-badge.delivery { background: #002530; color: #7ec8e3; }
     .cal-badge.sup-off  { background: #300000; color: #e06060; }
-    .cal-edit-btn {
-      width: 100%;
-      margin-top: 10px;
-      padding: 9px 12px;
+    .cal-edit-btn { display: none; }
+    .cal-legend { display: none; }
+    /* 発注バッジ */
+    .cal-badge.order-1  { background: #1e2a00; color: #a8d060; }
+    .cal-badge.order-2  { background: #2e2000; color: #f5c842; }
+    .cal-badge.order-3  { background: #2e1500; color: #ff9933; }
+    .cal-badge.no-order { background: #1e1e1e; color: #555; }
+    .cal-badge.store-off{ background: #2a0010; color: #ff6090; }
+    /* 日程設定ボトムシート */
+    .cal-sheet {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 300;
+    }
+    .cal-sheet.show { display: block; }
+    .cal-sheet-box {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #222;
+      border-radius: 16px 16px 0 0;
+      padding: 20px 16px 32px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .cal-sheet-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f5c842;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .cal-sheet-section {
+      margin-bottom: 16px;
+    }
+    .cal-sheet-label {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .cal-sheet-toggles {
+      display: flex;
+      gap: 8px;
+    }
+    .cal-sheet-toggle {
+      flex: 1;
+      padding: 10px 4px;
       border-radius: 8px;
       border: 1px solid #444;
-      background: #252525;
+      background: #2a2a2a;
       color: #aaa;
       font-size: 0.82rem;
       cursor: pointer;
-      text-align: left;
+      text-align: center;
     }
-    .cal-edit-btn.active { border-color: #e06060; color: #e06060; background: #1e0606; }
-    .cal-legend {
-      display: flex;
-      flex-wrap: wrap;
+    .cal-sheet-toggle.active { border-color: #e06060; background: #2a0010; color: #ff6090; }
+    .cal-order-btns {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
-      margin-top: 10px;
     }
-    .cal-legend span {
-      font-size: 0.62rem;
-      padding: 2px 6px;
-      border-radius: 4px;
+    .cal-order-btn {
+      padding: 12px 4px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #aaa;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .cal-order-btn.active { border-color: #f5c842; background: #2e2400; color: #f5c842; }
+    .cal-order-btn.active-2 { border-color: #f5c842; background: #2e2000; color: #f5c842; }
+    .cal-order-btn.active-3 { border-color: #ff9933; background: #2e1500; color: #ff9933; }
+    .cal-sheet-confirm {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: none;
+      background: #f5c842;
+      color: #1a1a1a;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
     }
     .cal-modal {
       display: none;
@@ -965,14 +1030,39 @@
     <button class="nav-btn" onclick="calMoveMonth(1)">翌月»</button>
   </div>
   <div class="cal-grid" id="calGrid"></div>
-  <button class="cal-edit-btn" id="calEditBtn" onclick="toggleCalEditMode()">✏️ 業者の休みを設定（タップでON/OFF）</button>
-  <div class="cal-legend">
-    <span style="background:#2e2400;color:#f5c842;">発注 N日</span>
-    <span style="background:#002530;color:#7ec8e3;">納品 N日分</span>
-    <span style="background:#300000;color:#e06060;">業者休</span>
-    <span style="color:#555;">🔴 定休（日曜）</span>
+  <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;font-size:0.62rem;">
+    <span style="padding:2px 6px;border-radius:3px;background:#1e2a00;color:#a8d060;">発注1日</span>
+    <span style="padding:2px 6px;border-radius:3px;background:#2e2000;color:#f5c842;">発注2日</span>
+    <span style="padding:2px 6px;border-radius:3px;background:#2e1500;color:#ff9933;">発注3日</span>
+    <span style="padding:2px 6px;border-radius:3px;background:#1e1e1e;color:#555;">発注なし</span>
+    <span style="padding:2px 6px;border-radius:3px;background:#2a0010;color:#ff6090;">店休</span>
+    <span style="padding:2px 6px;border-radius:3px;background:#300000;color:#e06060;">業者休</span>
   </div>
 </div><!-- /page-cal -->
+
+<!-- 日程設定ボトムシート -->
+<div class="cal-sheet" id="calSheet" onclick="closeCalSheet(event)">
+  <div class="cal-sheet-box" onclick="event.stopPropagation()">
+    <div class="cal-sheet-title" id="calSheetTitle"></div>
+    <div class="cal-sheet-section">
+      <div class="cal-sheet-label">休み設定</div>
+      <div class="cal-sheet-toggles">
+        <button class="cal-sheet-toggle" id="calSheetStore" onclick="toggleSheetFlag('store')">🏪 店舗休み</button>
+        <button class="cal-sheet-toggle" id="calSheetSupplier" onclick="toggleSheetFlag('supplier')">🚚 業者の休み</button>
+      </div>
+    </div>
+    <div class="cal-sheet-section">
+      <div class="cal-sheet-label">発注</div>
+      <div class="cal-order-btns">
+        <button class="cal-order-btn" id="calOrd0" onclick="setSheetOrder(0)">なし</button>
+        <button class="cal-order-btn" id="calOrd1" onclick="setSheetOrder(1)">1日分</button>
+        <button class="cal-order-btn" id="calOrd2" onclick="setSheetOrder(2)">2日分</button>
+        <button class="cal-order-btn" id="calOrd3" onclick="setSheetOrder(3)">3日分</button>
+      </div>
+    </div>
+    <button class="cal-sheet-confirm" onclick="saveCalSheet()">確定</button>
+  </div>
+</div>
 
 
 <div class="toast" id="toast">保存しました</div>
@@ -1383,32 +1473,79 @@
       rawRenderTable();
     }
     if (page === 'cal') {
-      renderCal(calYear, calMonth, 'calGrid', 'calTitle', calDayClick);
+      renderCal(calYear, calMonth, 'calGrid', 'calTitle');
     }
   }
 
   // ---- カレンダー ----
-  let supplierHolidays = new Set(JSON.parse(localStorage.getItem('yakitori_supplier_off') || '[]'));
-  function saveSupplierHolidays() {
-    localStorage.setItem('yakitori_supplier_off', JSON.stringify([...supplierHolidays]));
+  // planData[dateStr] = { orderDays: 0|1|2|3, storeHoliday: bool, supplierHoliday: bool }
+  // orderDays: 0=発注なし, 1=1日分(デフォルト), 2=2日分, 3=3日分
+  let planData = JSON.parse(localStorage.getItem('yakitori_cal_plan') || '{}');
+  function savePlanData() {
+    localStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
+  }
+  function getPlan(dateStr) {
+    return planData[dateStr] || { orderDays: 1, storeHoliday: false, supplierHoliday: false };
+  }
+  function nextNonSunday(dateStr) {
+    let d = addDays(dateStr, 1);
+    if (isSunday(d)) d = addDays(d, 1);
+    return d;
   }
 
   const _today = todayStr();
   let calYear  = parseInt(_today.slice(0,4));
   let calMonth = parseInt(_today.slice(5,7));
-  let modalCalYear  = calYear;
-  let modalCalMonth = calMonth;
-  let calEditMode = false;
 
-  function toggleCalEditMode() {
-    calEditMode = !calEditMode;
-    const btn = document.getElementById('calEditBtn');
-    btn.textContent = calEditMode ? '✅ 業者休み設定中（タップでON/OFF） 完了→もう一度押す' : '✏️ 業者の休みを設定（タップでON/OFF）';
-    btn.classList.toggle('active', calEditMode);
-    renderCal(calYear, calMonth, 'calGrid', 'calTitle', calDayClick);
+  // ボトムシートの一時データ
+  let _sheetDate = null;
+  let _sheetPlan = {};
+
+  function openCalSheet(dateStr) {
+    _sheetDate = dateStr;
+    _sheetPlan = { ...getPlan(dateStr) };
+    const d = new Date(dateStr + 'T00:00:00');
+    document.getElementById('calSheetTitle').textContent =
+      `${d.getMonth()+1}月${d.getDate()}日（${['日','月','火','水','木','金','土'][d.getDay()]}）`;
+    // 休み状態を反映
+    document.getElementById('calSheetStore').classList.toggle('active', !!_sheetPlan.storeHoliday);
+    document.getElementById('calSheetSupplier').classList.toggle('active', !!_sheetPlan.supplierHoliday);
+    // 発注ボタンを反映
+    [0,1,2,3].forEach(n => {
+      document.getElementById(`calOrd${n}`).classList.toggle('active', _sheetPlan.orderDays === n);
+    });
+    document.getElementById('calSheet').classList.add('show');
+  }
+  function closeCalSheet(e) {
+    document.getElementById('calSheet').classList.remove('show');
+  }
+  function toggleSheetFlag(flag) {
+    if (flag === 'store')    _sheetPlan.storeHoliday    = !_sheetPlan.storeHoliday;
+    if (flag === 'supplier') _sheetPlan.supplierHoliday = !_sheetPlan.supplierHoliday;
+    document.getElementById('calSheetStore').classList.toggle('active', !!_sheetPlan.storeHoliday);
+    document.getElementById('calSheetSupplier').classList.toggle('active', !!_sheetPlan.supplierHoliday);
+  }
+  function setSheetOrder(n) {
+    _sheetPlan.orderDays = n;
+    [0,1,2,3].forEach(i => document.getElementById(`calOrd${i}`).classList.toggle('active', i === n));
+  }
+  function saveCalSheet() {
+    planData[_sheetDate] = { ..._sheetPlan };
+    // 2日分→翌日発注なし、3日分→翌2日発注なし
+    if (_sheetPlan.orderDays >= 2) {
+      const d1 = nextNonSunday(_sheetDate);
+      planData[d1] = { ...getPlan(d1), orderDays: 0 };
+    }
+    if (_sheetPlan.orderDays >= 3) {
+      const d2 = nextNonSunday(nextNonSunday(_sheetDate));
+      planData[d2] = { ...getPlan(d2), orderDays: 0 };
+    }
+    savePlanData();
+    closeCalSheet();
+    renderCal(calYear, calMonth, 'calGrid', 'calTitle');
   }
 
-  function renderCal(year, month, gridId, titleId, onClickDay) {
+  function renderCal(year, month, gridId, titleId) {
     document.getElementById(titleId).textContent = `${year}年${month}月`;
     const grid = document.getElementById(gridId);
     grid.innerHTML = '';
@@ -1427,49 +1564,37 @@
     const daysInMonth = new Date(year, month, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const dow = (firstDow + d - 1) % 7;
-      const isSun   = dow === 6;
-      const isSat   = dow === 5;
+      const dow    = (firstDow + d - 1) % 7;
+      const isSun  = dow === 6;
+      const isSat  = dow === 5;
+      const plan   = getPlan(dateStr);
       const isToday  = dateStr === todayStr();
       const isActive = dateStr === currentDate;
-      const isSupOff = supplierHolidays.has(dateStr);
-      const data     = loadDate(dateStr);
-      const hasOrder    = data?.order?.some(v => v > 0);
-      const hasDelivery = data?.delivery?.some(v => v > 0);
-      const odVal = data?.orderDays || 1;
 
       const cell = document.createElement('div');
       let cls = 'cal-cell';
-      if (isSun)    cls += ' kyuujitsu sun';
-      else if (isSat) cls += ' sat';
-      if (isToday)  cls += ' today';
-      if (isActive) cls += ' active-day';
-      if (isSupOff && !isSun) cls += ' sup-off-day';
-      if (calEditMode && gridId === 'calGrid') cls += ' edit-mode';
+      if (isSun)          cls += ' kyuujitsu sun';
+      else if (isSat)     cls += ' sat';
+      if (isToday)        cls += ' today';
+      if (isActive)       cls += ' active-day';
+      if (!isSun && plan.storeHoliday) cls += ' sup-off-day';
       cell.className = cls;
 
       let html = `<span class="cal-date">${d}</span>`;
       if (isSun) {
         html += `<span class="cal-rest">定休</span>`;
       } else {
-        if (isSupOff)    html += `<span class="cal-badge sup-off">業者休</span>`;
-        if (hasOrder)    html += `<span class="cal-badge order">発注${odVal}日</span>`;
-        if (hasDelivery) html += `<span class="cal-badge delivery">納品${odVal}日分</span>`;
+        if (plan.storeHoliday)    html += `<span class="cal-badge store-off">店休</span>`;
+        if (plan.supplierHoliday) html += `<span class="cal-badge sup-off">業者休</span>`;
+        if (!plan.storeHoliday) {
+          if (plan.orderDays === 0)      html += `<span class="cal-badge no-order">発注なし</span>`;
+          else if (plan.orderDays === 1) html += `<span class="cal-badge order-1">発注1日</span>`;
+          else if (plan.orderDays === 2) html += `<span class="cal-badge order-2">発注2日</span>`;
+          else if (plan.orderDays === 3) html += `<span class="cal-badge order-3">発注3日</span>`;
+        }
       }
       cell.innerHTML = html;
-
-      if (!isSun) {
-        cell.onclick = () => {
-          if (calEditMode && gridId === 'calGrid') {
-            if (supplierHolidays.has(dateStr)) supplierHolidays.delete(dateStr);
-            else supplierHolidays.add(dateStr);
-            saveSupplierHolidays();
-            renderCal(year, month, gridId, titleId, onClickDay);
-          } else {
-            onClickDay(dateStr);
-          }
-        };
-      }
+      if (!isSun) cell.onclick = () => openCalSheet(dateStr);
       grid.appendChild(cell);
     }
   }
@@ -1478,15 +1603,7 @@
     calMonth += n;
     if (calMonth > 12) { calMonth = 1; calYear++; }
     if (calMonth < 1)  { calMonth = 12; calYear--; }
-    renderCal(calYear, calMonth, 'calGrid', 'calTitle', calDayClick);
-  }
-  function calDayClick(dateStr) {
-    saveCurrent();
-    currentDate = dateStr;
-    document.getElementById('datePicker').value = currentDate;
-    switchPage('yaki');
-    buildDayTabs();
-    renderTable();
+    renderCal(calYear, calMonth, 'calGrid', 'calTitle');
   }
 
   // ---- 品目設定パネル ----
