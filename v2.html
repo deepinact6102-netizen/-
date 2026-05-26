@@ -237,6 +237,13 @@
       font-weight: 700;
       background: #1e1a00;
     }
+    .order-unit {
+      display: block;
+      font-size: 0.62rem;
+      color: #aaa;
+      text-align: center;
+      margin-top: 1px;
+    }
 
     td.order-cell input:focus { background: #252000; }
 
@@ -1435,7 +1442,7 @@
         <td class="stock-cell"><input type="number" id="rsto_${idx}" min="0" value="${stockVal}" placeholder="0"></td>
         <td><input type="number" id="rrem_${idx}" min="0" value="${remaining}" placeholder="0" oninput="rawUpdateForecast(${idx})"></td>
         <td class="forecast-cell"><input type="number" id="rfore_${idx}" min="0" value="${forecast}" oninput="rawSyncOrder(${idx})"></td>
-        <td class="order-cell"><input type="number" id="rord_${idx}" min="0" value="${order}" placeholder="—" oninput="rawOnOrderChange()"></td>
+        <td class="order-cell"><input type="number" id="rord_${idx}" min="0" value="${order}" placeholder="—" oninput="rawOnOrderChange()"><span class="order-unit">${item.unit || '本'}</span></td>
       `;
       body.appendChild(tr);
     });
