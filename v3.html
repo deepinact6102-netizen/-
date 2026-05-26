@@ -604,11 +604,7 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    .cal-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #f5c842;
-    }
+    .cal-title { font-size: 1.05rem; font-weight: 700; color: #f5c842; }
     .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -616,47 +612,76 @@
     }
     .cal-day-hdr {
       text-align: center;
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: #888;
-      padding: 4px 0;
+      padding: 5px 0;
     }
     .cal-day-hdr.sun { color: #e06060; }
     .cal-day-hdr.sat { color: #6090e0; }
     .cal-cell {
       background: #252525;
       border-radius: 6px;
-      padding: 5px 2px 4px;
+      padding: 5px 2px 5px;
       text-align: center;
       cursor: pointer;
-      min-height: 52px;
+      min-height: 76px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
       transition: background 0.1s;
       border: 1px solid transparent;
+      overflow: hidden;
     }
     .cal-cell:active { background: #333; }
     .cal-cell.empty { background: transparent; cursor: default; border: none; }
     .cal-cell.kyuujitsu { background: #1c1c1c; cursor: default; }
     .cal-cell.active-day { border-color: #f5c842; background: #2a2400; }
-    .cal-date {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #f0e6d3;
-    }
-    .cal-cell.sun .cal-date { color: #e06060; }
-    .cal-cell.sat .cal-date { color: #6090e0; }
+    .cal-cell.sup-off-day { border-color: #803030; background: #1e0a0a; }
+    .cal-date { font-size: 0.95rem; font-weight: 700; color: #f0e6d3; }
+    .cal-cell.sun .cal-date  { color: #e06060; }
+    .cal-cell.sat .cal-date  { color: #6090e0; }
     .cal-cell.kyuujitsu .cal-date { color: #555; }
     .cal-cell.today .cal-date { text-decoration: underline; }
-    .cal-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #f5c842;
+    .cal-rest  { font-size: 0.55rem; color: #c04040; }
+    .cal-badge {
+      font-size: 0.55rem;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 700;
+      white-space: nowrap;
+      line-height: 1.5;
+      width: 100%;
+      text-align: center;
     }
-    .cal-rest { font-size: 0.52rem; color: #c04040; }
+    .cal-badge.order    { background: #2e2400; color: #f5c842; }
+    .cal-badge.delivery { background: #002530; color: #7ec8e3; }
+    .cal-badge.sup-off  { background: #300000; color: #e06060; }
+    .cal-edit-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #252525;
+      color: #aaa;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-align: left;
+    }
+    .cal-edit-btn.active { border-color: #e06060; color: #e06060; background: #1e0606; }
+    .cal-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .cal-legend span {
+      font-size: 0.62rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
     .cal-modal {
       display: none;
       position: fixed;
@@ -941,8 +966,12 @@
     <button class="nav-btn" onclick="calMoveMonth(1)">翌月»</button>
   </div>
   <div class="cal-grid" id="calGrid"></div>
-  <div style="margin-top:10px;font-size:0.7rem;color:#666;">
-    🟡 発注データあり　⬜ データなし　🔴 定休（日曜）
+  <button class="cal-edit-btn" id="calEditBtn" onclick="toggleCalEditMode()">✏️ 業者の休みを設定（タップでON/OFF）</button>
+  <div class="cal-legend">
+    <span style="background:#2e2400;color:#f5c842;">発注 N日</span>
+    <span style="background:#002530;color:#7ec8e3;">納品 N日分</span>
+    <span style="background:#300000;color:#e06060;">業者休</span>
+    <span style="color:#555;">🔴 定休（日曜）</span>
   </div>
 </div><!-- /page-cal -->
 
@@ -1084,7 +1113,7 @@
     const order     = items.map((_, i) => parseInt(document.getElementById(`order_${i}`)?.value)     || 0);
     const delivery  = items.map((_, i) => parseInt(document.getElementById(`delivery_${i}`)?.value)  || 0);
     const stock     = items.map((_, i) => parseInt(document.getElementById(`stock_${i}`)?.value)     || 0);
-    return { remaining, forecast, order, delivery, stock };
+    return { remaining, forecast, order, delivery, stock, orderDays };
   }
 
   function saveCurrent() {
@@ -1275,6 +1304,7 @@
     if (deliveryData) {
       const todayData = getCurrentData();
       deliveryData.delivery = todayData.order;
+      deliveryData.orderDays = orderDays;
       saveDate(deliveryDate, deliveryData);
     }
     // 2日分以上の発注：翌日〜(orderDays-1)営業日分の発注を0にする（日曜はスキップ）
@@ -1371,37 +1401,36 @@
   }
 
   // ---- カレンダー ----
+  let supplierHolidays = new Set(JSON.parse(localStorage.getItem('yakitori_supplier_off') || '[]'));
+  function saveSupplierHolidays() {
+    localStorage.setItem('yakitori_supplier_off', JSON.stringify([...supplierHolidays]));
+  }
+
   const _today = todayStr();
   let calYear  = parseInt(_today.slice(0,4));
   let calMonth = parseInt(_today.slice(5,7));
   let modalCalYear  = calYear;
   let modalCalMonth = calMonth;
+  let calEditMode = false;
 
-  function getDatesWithData(year, month) {
-    const prefix = `yakitori_${year}-${String(month).padStart(2,'0')}-`;
-    const dates = new Set();
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(prefix) && !/yakitori_(base|custom|store|raw)/.test(key)) {
-        dates.add(key.replace('yakitori_', ''));
-      }
-    }
-    return dates;
+  function toggleCalEditMode() {
+    calEditMode = !calEditMode;
+    const btn = document.getElementById('calEditBtn');
+    btn.textContent = calEditMode ? '✅ 業者休み設定中（タップでON/OFF） 完了→もう一度押す' : '✏️ 業者の休みを設定（タップでON/OFF）';
+    btn.classList.toggle('active', calEditMode);
+    renderCal(calYear, calMonth, 'calGrid', 'calTitle', calDayClick);
   }
 
   function renderCal(year, month, gridId, titleId, onClickDay) {
     document.getElementById(titleId).textContent = `${year}年${month}月`;
-    const datesWithData = getDatesWithData(year, month);
     const grid = document.getElementById(gridId);
     grid.innerHTML = '';
-    // 曜日ヘッダー
     ['月','火','水','木','金','土','日'].forEach((wd, i) => {
       const el = document.createElement('div');
       el.className = 'cal-day-hdr' + (i===5?' sat':i===6?' sun':'');
       el.textContent = wd;
       grid.appendChild(el);
     });
-    // 月初の曜日（月曜始まり: 0=月 〜 6=日）
     const firstDow = (new Date(year, month-1, 1).getDay() + 6) % 7;
     for (let i = 0; i < firstDow; i++) {
       const el = document.createElement('div');
@@ -1411,23 +1440,49 @@
     const daysInMonth = new Date(year, month, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const dow = (firstDow + d - 1) % 7; // 0=月 〜 6=日
-      const isSun = dow === 6;
-      const isSat = dow === 5;
+      const dow = (firstDow + d - 1) % 7;
+      const isSun   = dow === 6;
+      const isSat   = dow === 5;
       const isToday  = dateStr === todayStr();
       const isActive = dateStr === currentDate;
-      const hasData  = datesWithData.has(dateStr);
+      const isSupOff = supplierHolidays.has(dateStr);
+      const data     = loadDate(dateStr);
+      const hasOrder    = data?.order?.some(v => v > 0);
+      const hasDelivery = data?.delivery?.some(v => v > 0);
+      const odVal = data?.orderDays || 1;
+
       const cell = document.createElement('div');
       let cls = 'cal-cell';
-      if (isSun) cls += ' kyuujitsu sun';
+      if (isSun)    cls += ' kyuujitsu sun';
       else if (isSat) cls += ' sat';
       if (isToday)  cls += ' today';
       if (isActive) cls += ' active-day';
+      if (isSupOff && !isSun) cls += ' sup-off-day';
+      if (calEditMode && gridId === 'calGrid') cls += ' edit-mode';
       cell.className = cls;
-      cell.innerHTML = `<span class="cal-date">${d}</span>`;
-      if (isSun) cell.innerHTML += `<span class="cal-rest">定休</span>`;
-      else if (hasData) cell.innerHTML += `<span class="cal-dot"></span>`;
-      if (!isSun) cell.onclick = () => onClickDay(dateStr);
+
+      let html = `<span class="cal-date">${d}</span>`;
+      if (isSun) {
+        html += `<span class="cal-rest">定休</span>`;
+      } else {
+        if (isSupOff)    html += `<span class="cal-badge sup-off">業者休</span>`;
+        if (hasOrder)    html += `<span class="cal-badge order">発注${odVal}日</span>`;
+        if (hasDelivery) html += `<span class="cal-badge delivery">納品${odVal}日分</span>`;
+      }
+      cell.innerHTML = html;
+
+      if (!isSun) {
+        cell.onclick = () => {
+          if (calEditMode && gridId === 'calGrid') {
+            if (supplierHolidays.has(dateStr)) supplierHolidays.delete(dateStr);
+            else supplierHolidays.add(dateStr);
+            saveSupplierHolidays();
+            renderCal(year, month, gridId, titleId, onClickDay);
+          } else {
+            onClickDay(dateStr);
+          }
+        };
+      }
       grid.appendChild(cell);
     }
   }
