@@ -1573,28 +1573,24 @@
 
       const cell = document.createElement('div');
       let cls = 'cal-cell';
-      if (isSun)          cls += ' kyuujitsu sun';
+      if (isSun)          cls += ' sun';
       else if (isSat)     cls += ' sat';
       if (isToday)        cls += ' today';
       if (isActive)       cls += ' active-day';
-      if (!isSun && plan.storeHoliday) cls += ' sup-off-day';
+      if (plan.storeHoliday) cls += ' sup-off-day';
       cell.className = cls;
 
       let html = `<span class="cal-date">${d}</span>`;
-      if (isSun) {
-        html += `<span class="cal-rest">定休</span>`;
-      } else {
-        if (plan.storeHoliday)    html += `<span class="cal-badge store-off">店休</span>`;
-        if (plan.supplierHoliday) html += `<span class="cal-badge sup-off">業者休</span>`;
-        if (!plan.storeHoliday) {
-          if (plan.orderDays === 0)      html += `<span class="cal-badge no-order">発注なし</span>`;
-          else if (plan.orderDays === 1) html += `<span class="cal-badge order-1">発注1日</span>`;
-          else if (plan.orderDays === 2) html += `<span class="cal-badge order-2">発注2日</span>`;
-          else if (plan.orderDays === 3) html += `<span class="cal-badge order-3">発注3日</span>`;
-        }
+      if (plan.storeHoliday)    html += `<span class="cal-badge store-off">店休</span>`;
+      if (plan.supplierHoliday) html += `<span class="cal-badge sup-off">業者休</span>`;
+      if (!plan.storeHoliday) {
+        if (plan.orderDays === 0)      html += `<span class="cal-badge no-order">発注なし</span>`;
+        else if (plan.orderDays === 1) html += `<span class="cal-badge order-1">発注1日</span>`;
+        else if (plan.orderDays === 2) html += `<span class="cal-badge order-2">発注2日</span>`;
+        else if (plan.orderDays === 3) html += `<span class="cal-badge order-3">発注3日</span>`;
       }
       cell.innerHTML = html;
-      if (!isSun) cell.onclick = () => openCalSheet(dateStr);
+      cell.onclick = () => openCalSheet(dateStr);
       grid.appendChild(cell);
     }
   }
