@@ -811,7 +811,6 @@
   <button class="nav-btn" onclick="moveMonth(-1)">«前月</button>
   <button class="nav-btn" onclick="moveWeek(-1)">◀前週</button>
   <input type="date" id="datePicker" onchange="onDateChange()">
-  <button class="nav-btn" onclick="openCalModal()">📅</button>
   <button class="nav-btn" onclick="moveWeek(1)">翌週▶</button>
   <button class="nav-btn" onclick="moveMonth(1)">翌月»</button>
 </div>
@@ -975,18 +974,6 @@
   </div>
 </div><!-- /page-cal -->
 
-<!-- カレンダーモーダル -->
-<div class="cal-modal" id="calModal">
-  <div class="cal-modal-box">
-    <div class="cal-header">
-      <button class="nav-btn" onclick="modalCalMoveMonth(-1)">«前月</button>
-      <span class="cal-title" id="modalCalTitle"></span>
-      <button class="nav-btn" onclick="modalCalMoveMonth(1)">翌月»</button>
-    </div>
-    <div class="cal-grid" id="modalCalGrid"></div>
-    <button onclick="closeCalModal()" style="width:100%;margin-top:12px;padding:10px;background:#333;border:1px solid #555;border-radius:8px;color:#f0e6d3;font-size:0.9rem;cursor:pointer;">閉じる</button>
-  </div>
-</div>
 
 <div class="toast" id="toast">保存しました</div>
 
@@ -1498,30 +1485,6 @@
     currentDate = dateStr;
     document.getElementById('datePicker').value = currentDate;
     switchPage('yaki');
-    buildDayTabs();
-    renderTable();
-  }
-  function openCalModal() {
-    const d = new Date();
-    modalCalYear  = d.getFullYear();
-    modalCalMonth = d.getMonth() + 1;
-    document.getElementById('calModal').classList.add('show');
-    renderCal(modalCalYear, modalCalMonth, 'modalCalGrid', 'modalCalTitle', modalCalDayClick);
-  }
-  function closeCalModal() {
-    document.getElementById('calModal').classList.remove('show');
-  }
-  function modalCalMoveMonth(n) {
-    modalCalMonth += n;
-    if (modalCalMonth > 12) { modalCalMonth = 1; modalCalYear++; }
-    if (modalCalMonth < 1)  { modalCalMonth = 12; modalCalYear--; }
-    renderCal(modalCalYear, modalCalMonth, 'modalCalGrid', 'modalCalTitle', modalCalDayClick);
-  }
-  function modalCalDayClick(dateStr) {
-    closeCalModal();
-    saveCurrent();
-    currentDate = dateStr;
-    document.getElementById('datePicker').value = currentDate;
     buildDayTabs();
     renderTable();
   }
