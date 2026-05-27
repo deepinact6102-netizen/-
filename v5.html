@@ -271,7 +271,7 @@
     td.delivery-cell input { border-color: #5aafc8; color: #5aafc8; }
     td.stock-cell input { border-color: #d4882a; color: #d4882a; }
     body.light td.delivery-cell input { border-color: #1a7090; color: #1a7090; }
-    body.light td.stock-cell input { border-color: #a05c00; color: #a05c00; }
+    body.light td.stock-cell input { border-color: #7a4000; color: #7a4000; }
     .item-target { color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 
     td input[type="number"] {
@@ -701,7 +701,7 @@
       align-items: center;
       gap: 3px;
       transition: background 0.1s;
-      border: 1px solid transparent;
+      border: 1px solid var(--border3);
       overflow: hidden;
     }
     .cal-cell:active { background: var(--surface3); }
@@ -709,6 +709,9 @@
     .cal-cell.kyuujitsu { background: var(--surface4); cursor: default; }
     .cal-cell.active-day { border-color: var(--accent-text); background: var(--cal-active-bg); }
     .cal-cell.sup-off-day { border-color: var(--cal-supoff-border); background: var(--cal-supoff-bg); }
+    /* ライトモード: セルの区切りをより明確に */
+    body.light .cal-cell { border-color: var(--border); }
+    body.light .cal-grid { gap: 4px; }
     .cal-date { font-size: 0.95rem; font-weight: 700; color: var(--text); }
     .cal-cell.sun .cal-date  { color: #e06060; }
     .cal-cell.sat .cal-date  { color: #6090e0; }
