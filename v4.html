@@ -470,9 +470,9 @@
       width: 60px;
       padding: 5px 6px;
       border-radius: 5px;
-      border: 1px solid #555;
-      background: #1a1a1a;
-      color: #f0e6d3;
+      border: 1px solid var(--border2);
+      background: var(--input-bg);
+      color: var(--text);
       text-align: center;
       font-size: 0.9rem;
       outline: none;
@@ -501,7 +501,7 @@
     }
 
     .ocr-apply { background: #f5c842; color: #1a1a1a; }
-    .ocr-cancel { background: #333; color: #ccc; }
+    .ocr-cancel { background: var(--surface3); color: var(--text-sub); }
 
     /* 店舗名 */
     .store-name-bar {
@@ -513,22 +513,22 @@
     .store-name-display {
       font-size: 1rem;
       font-weight: 700;
-      color: #f0e6d3;
+      color: var(--text);
       cursor: pointer;
       flex: 1;
       padding: 4px 0;
-      border-bottom: 1px dashed #555;
+      border-bottom: 1px dashed var(--border2);
     }
-    .store-name-display.placeholder { color: #555; }
+    .store-name-display.placeholder { color: var(--text-fade); }
     .store-name-input {
       flex: 1;
       font-size: 1rem;
       font-weight: 700;
       padding: 4px 8px;
-      background: #2a2a2a;
+      background: var(--surface3);
       border: 1px solid #f5c842;
       border-radius: 5px;
-      color: #f0e6d3;
+      color: var(--text);
       outline: none;
     }
 
@@ -542,9 +542,9 @@
       flex: 1;
       padding: 9px 4px;
       border-radius: 7px;
-      border: 1px solid #444;
-      background: #252525;
-      color: #aaa;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-sub);
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
@@ -560,8 +560,8 @@
     .settings-toggle-btn {
       width: 100%;
       padding: 8px 12px;
-      background: #252525;
-      border: 1px solid #444;
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: 8px;
       color: #f5c842;
       font-size: 0.85rem;
@@ -569,11 +569,11 @@
       margin-bottom: 8px;
       text-align: left;
     }
-    .settings-toggle-btn:active { background: #333; }
+    .settings-toggle-btn:active { background: var(--surface3); }
     .settings-panel {
       display: none;
-      background: #1e1e1e;
-      border: 1px solid #444;
+      background: var(--surface4);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px;
       margin-bottom: 12px;
@@ -584,7 +584,7 @@
       align-items: center;
       gap: 6px;
       padding: 5px 0;
-      border-bottom: 1px solid #2a2a2a;
+      border-bottom: 1px solid var(--border4);
     }
     .settings-item-row:last-child { border-bottom: none; }
     .settings-icon { width: 22px; text-align: center; font-size: 1rem; flex-shrink: 0; }
@@ -592,23 +592,23 @@
       flex: 1;
       min-width: 0;
       padding: 7px 8px;
-      background: #2a2a2a;
-      border: 1px solid #444;
+      background: var(--surface3);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #f0e6d3;
+      color: var(--text);
       font-size: 16px;
       outline: none;
     }
     .settings-name-input:focus { border-color: #f5c842; }
-    .settings-lbl { font-size: 0.7rem; color: #888; flex-shrink: 0; }
+    .settings-lbl { font-size: 0.7rem; color: var(--text-mute); flex-shrink: 0; }
     .settings-target-input {
       width: 50px;
       flex-shrink: 0;
       padding: 7px 4px;
-      background: #2a2a2a;
-      border: 1px solid #444;
+      background: var(--surface3);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #f0e6d3;
+      color: var(--text);
       font-size: 16px;
       text-align: center;
       outline: none;
@@ -621,10 +621,10 @@
       width: 44px;
       flex-shrink: 0;
       padding: 7px 4px;
-      background: #2a2a2a;
-      border: 1px solid #444;
+      background: var(--surface3);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #f0e6d3;
+      color: var(--text);
       font-size: 16px;
       text-align: center;
       outline: none;
@@ -639,7 +639,7 @@
     }
     .settings-course-wrap span {
       font-size: 0.58rem;
-      color: #888;
+      color: var(--text-mute);
       white-space: nowrap;
     }
     .settings-course-wrap input[type="checkbox"] {
@@ -666,13 +666,13 @@
       text-align: center;
       font-size: 0.72rem;
       font-weight: 700;
-      color: #888;
+      color: var(--text-mute);
       padding: 5px 0;
     }
     .cal-day-hdr.sun { color: #e06060; }
     .cal-day-hdr.sat { color: #6090e0; }
     .cal-cell {
-      background: #252525;
+      background: var(--surface2);
       border-radius: 6px;
       padding: 5px 2px 5px;
       text-align: center;
@@ -686,15 +686,17 @@
       border: 1px solid transparent;
       overflow: hidden;
     }
-    .cal-cell:active { background: #333; }
+    .cal-cell:active { background: var(--surface3); }
     .cal-cell.empty { background: transparent; cursor: default; border: none; }
-    .cal-cell.kyuujitsu { background: #1c1c1c; cursor: default; }
+    .cal-cell.kyuujitsu { background: var(--surface4); cursor: default; }
     .cal-cell.active-day { border-color: #f5c842; background: #2a2400; }
+    body.light .cal-cell.active-day { border-color: #f5c842; background: #fffbe6; }
     .cal-cell.sup-off-day { border-color: #803030; background: #1e0a0a; }
-    .cal-date { font-size: 0.95rem; font-weight: 700; color: #f0e6d3; }
+    body.light .cal-cell.sup-off-day { border-color: #c05050; background: #fff0f0; }
+    .cal-date { font-size: 0.95rem; font-weight: 700; color: var(--text); }
     .cal-cell.sun .cal-date  { color: #e06060; }
     .cal-cell.sat .cal-date  { color: #6090e0; }
-    .cal-cell.kyuujitsu .cal-date { color: #555; }
+    .cal-cell.kyuujitsu .cal-date { color: var(--text-fade); }
     .cal-cell.today .cal-date { text-decoration: underline; }
     .cal-rest  { font-size: 0.55rem; color: #c04040; }
     .cal-badge {
@@ -732,7 +734,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #222;
+      background: var(--surface);
       border-radius: 16px 16px 0 0;
       padding: 20px 16px 32px;
       max-width: 480px;
@@ -750,7 +752,7 @@
     }
     .cal-sheet-label {
       font-size: 0.78rem;
-      color: #888;
+      color: var(--text-mute);
       margin-bottom: 8px;
     }
     .cal-sheet-toggles {
@@ -761,9 +763,9 @@
       flex: 1;
       padding: 10px 4px;
       border-radius: 8px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #aaa;
+      border: 1px solid var(--border);
+      background: var(--surface3);
+      color: var(--text-sub);
       font-size: 0.82rem;
       cursor: pointer;
       text-align: center;
@@ -777,9 +779,9 @@
     .cal-order-btn {
       padding: 12px 4px;
       border-radius: 8px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #aaa;
+      border: 1px solid var(--border);
+      background: var(--surface3);
+      color: var(--text-sub);
       font-size: 0.82rem;
       cursor: pointer;
       text-align: center;
@@ -810,7 +812,7 @@
     }
     .cal-modal.show { display: block; }
     .cal-modal-box {
-      background: #222;
+      background: var(--surface);
       border-radius: 12px;
       padding: 16px;
       max-width: 480px;
@@ -838,20 +840,20 @@
     .raw-table {
       width: 100%;
       border-collapse: collapse;
-      background: #222;
+      background: var(--surface);
       table-layout: fixed;
     }
-    .raw-table thead tr { background: #2e2e2e; }
+    .raw-table thead tr { background: var(--surface5); }
     .raw-table thead th {
       padding: 7px 4px;
       text-align: center;
       font-size: 0.7rem;
       font-weight: 600;
       color: #f5c842;
-      border-bottom: 2px solid #444;
+      border-bottom: 2px solid var(--border);
     }
     .raw-table thead th:first-child { text-align: left; padding-left: 8px; }
-    .raw-table tbody tr { border-bottom: 1px solid #2a2a2a; }
+    .raw-table tbody tr { border-bottom: 1px solid var(--border4); }
     .raw-table tbody tr:last-child { border-bottom: none; }
     .raw-table td {
       padding: 5px 3px;
@@ -868,10 +870,10 @@
     .raw-table td input[type="number"] {
       width: 100%;
       padding: 5px 3px;
-      background: #1a1a1a;
-      border: 1px solid #444;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
       border-radius: 4px;
-      color: #f0e6d3;
+      color: var(--text);
       font-size: 0.82rem;
       text-align: center;
       outline: none;
@@ -884,7 +886,7 @@
     .raw-del-btn {
       background: none;
       border: none;
-      color: #666;
+      color: var(--text-dim);
       font-size: 1rem;
       cursor: pointer;
       padding: 2px;
@@ -894,19 +896,22 @@
       width: 100%;
       padding: 10px;
       border-radius: 8px;
-      border: 1px dashed #555;
-      background: #1e1e1e;
-      color: #aaa;
+      border: 1px dashed var(--border2);
+      background: var(--surface4);
+      color: var(--text-sub);
       font-size: 0.85rem;
       cursor: pointer;
       margin-bottom: 10px;
     }
-    .btn-add-row:active { background: #252525; }
+    .btn-add-row:active { background: var(--surface2); }
   </style>
 </head>
 <body>
 
-<h1>🍢 串焼き・焼き鳥 発注表</h1>
+<div style="display:flex;align-items:center;justify-content:space-between;">
+  <h1>🍢 串焼き・焼き鳥 発注表</h1>
+  <button id="themeToggleBtn" onclick="toggleTheme()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;">🌙</button>
+</div>
 <a class="manual-link" href="./manual.html">📖 取扱説明書を見る</a>
 
 <!-- 店舗名 -->
@@ -1121,6 +1126,24 @@
 <div class="toast" id="toast">保存しました</div>
 
 <script>
+  // テーマ初期化
+  (function(){
+    const t = localStorage.getItem('yakitori_theme');
+    if(t === 'light') document.body.classList.add('light');
+    updateThemeBtn();
+  })();
+
+  function updateThemeBtn() {
+    const btn = document.getElementById('themeToggleBtn');
+    if(btn) btn.textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+    localStorage.setItem('yakitori_theme', document.body.classList.contains('light') ? 'light' : 'dark');
+    updateThemeBtn();
+  }
+
   // カスタム品目（名称・目安を自由記入）
   let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
   customItemDefs = customItemDefs.map(d => ({ course: false, ...d }));
