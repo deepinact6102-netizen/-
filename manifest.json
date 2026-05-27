@@ -2,7 +2,7 @@
   "name": "串焼き・焼き鳥 発注表",
   "short_name": "焼き鳥発注",
   "description": "串焼き・焼き鳥の発注管理アプリ",
-  "start_url": "./v4.html",
+  "start_url": "./v5.html",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#f5c842",
