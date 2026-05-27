@@ -13,56 +13,59 @@
   <meta name="theme-color" content="#f5c842">
   <style>
     :root {
-      --bg:        #1a1a1a;
-      --surface:   #222;
-      --surface2:  #252525;
-      --surface3:  #2a2a2a;
-      --surface4:  #1e1e1e;
-      --surface5:  #2e2e2e;
-      --text:      #f0e6d3;
-      --text-sub:  #aaa;
-      --text-mute: #888;
-      --text-dim:  #666;
-      --text-fade: #555;
-      --border:    #444;
-      --border2:   #555;
-      --border3:   #3a3a3a;
-      --border4:   #2a2a2a;
-      --input-bg:  #1a1a1a;
-      --order-bg:  #1e1a00;
+      --bg:          #1a1a1a;
+      --surface:     #222;
+      --surface2:    #252525;
+      --surface3:    #2a2a2a;
+      --surface4:    #1e1e1e;
+      --surface5:    #2e2e2e;
+      --text:        #f0e6d3;
+      --text-sub:    #aaa;
+      --text-mute:   #888;
+      --text-dim:    #666;
+      --text-fade:   #555;
+      --border:      #444;
+      --border2:     #555;
+      --border3:     #3a3a3a;
+      --border4:     #2a2a2a;
+      --input-bg:    #1a1a1a;
+      --order-bg:    #1e1a00;
       --order-bg-focus: #252000;
       --no-order-bg: #1e1e1e;
       --no-order-text: #555;
       --cal-active-bg: #2a2400;
       --cal-supoff-border: #803030;
       --cal-supoff-bg: #1e0a0a;
-      --overlay-bg: rgba(0,0,0,0.75);
+      --overlay-bg:  rgba(0,0,0,0.75);
+      --accent-text: #f5c842;
     }
+    /* ライトテーマ：温かみのある和紙風カラー */
     body.light {
-      --bg:        #f2f2f2;
-      --surface:   #ffffff;
-      --surface2:  #f5f5f5;
-      --surface3:  #e8e8e8;
-      --surface4:  #eeeeee;
-      --surface5:  #e0e0e0;
-      --text:      #1a1a1a;
-      --text-sub:  #555;
-      --text-mute: #777;
-      --text-dim:  #999;
-      --text-fade: #bbb;
-      --border:    #ccc;
-      --border2:   #bbb;
-      --border3:   #ddd;
-      --border4:   #e8e8e8;
-      --input-bg:  #ffffff;
-      --order-bg:  #fffbe6;
-      --order-bg-focus: #fff8cc;
-      --no-order-bg: #e8e8e8;
-      --no-order-text: #999;
-      --cal-active-bg: #fffbe6;
+      --bg:          #f5f0e8;
+      --surface:     #fffcf7;
+      --surface2:    #f0ebe1;
+      --surface3:    #e6e0d4;
+      --surface4:    #ede8de;
+      --surface5:    #ddd8ce;
+      --text:        #2a1f0e;
+      --text-sub:    #6b5c48;
+      --text-mute:   #8a7a68;
+      --text-dim:    #a89880;
+      --text-fade:   #c4b8a8;
+      --border:      #c8bfb0;
+      --border2:     #b8b0a0;
+      --border3:     #d8d0c4;
+      --border4:     #e4ddd4;
+      --input-bg:    #fffcf7;
+      --order-bg:    #fff8e8;
+      --order-bg-focus: #fff4d8;
+      --no-order-bg: #e8e4dc;
+      --no-order-text: #9a9080;
+      --cal-active-bg: #fff8e0;
       --cal-supoff-border: #c05050;
-      --cal-supoff-bg: #fff0f0;
-      --overlay-bg: rgba(0,0,0,0.55);
+      --cal-supoff-bg: #fdf0f0;
+      --overlay-bg:  rgba(0,0,0,0.5);
+      --accent-text: #8b5e00;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,7 +83,7 @@
     h1 {
       font-size: 1.1rem;
       font-weight: 700;
-      color: #f5c842;
+      color: var(--accent-text);
       margin-bottom: 4px;
     }
     .manual-link {
@@ -91,7 +94,7 @@
       text-decoration: none;
       padding: 0 4px 8px;
     }
-    .manual-link:active { color: #f5c842; }
+    .manual-link:active { color: var(--accent-text); }
 
     /* 週ナビ */
     .week-nav {
@@ -115,7 +118,7 @@
       text-align: center;
     }
 
-    .week-nav input[type="date"]:focus { border-color: #f5c842; }
+    .week-nav input[type="date"]:focus { border-color: var(--accent-text); }
 
     .nav-btn {
       padding: 6px 10px;
@@ -157,7 +160,7 @@
     .day-tab.active {
       background: #f5c842;
       color: #1a1a1a;
-      border-color: #f5c842;
+      border-color: var(--accent-text);
     }
 
     .day-tab.active .md { color: #7a6200; }
@@ -188,7 +191,7 @@
       margin-bottom: 8px;
     }
 
-    .info-bar span { color: #f5c842; }
+    .info-bar span { color: var(--accent-text); }
 
     /* 保存トースト */
     .toast {
@@ -230,7 +233,7 @@
       text-align: center;
       font-size: 0.7rem;
       font-weight: 600;
-      color: #f5c842;
+      color: var(--accent-text);
       border-bottom: 2px solid var(--border);
       white-space: nowrap;
       overflow: hidden;
@@ -265,8 +268,10 @@
     }
 
     td.target { color: var(--text-mute); font-size: 0.8rem; }
-    td.delivery-cell input { border-color: #7ec8e3; color: #7ec8e3; }
-    td.stock-cell input { border-color: #e8a44a; color: #e8a44a; }
+    td.delivery-cell input { border-color: #5aafc8; color: #5aafc8; }
+    td.stock-cell input { border-color: #d4882a; color: #d4882a; }
+    body.light td.delivery-cell input { border-color: #1a7090; color: #1a7090; }
+    body.light td.stock-cell input { border-color: #a05c00; color: #a05c00; }
     .item-target { color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 
     td input[type="number"] {
@@ -287,18 +292,19 @@
     td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
     td input[type="number"]:focus {
-      border-color: #f5c842;
+      border-color: var(--accent-text);
       background: var(--surface2);
     }
 
     td.forecast-cell input { border-color: #5a8a5a; color: #7dcf7d; }
+    body.light td.forecast-cell input { border-color: #3a6e3a; color: #2a6a2a; }
 
     td.order-cell {
       white-space: nowrap;
     }
     td.order-cell input {
-      border-color: #f5c842;
-      color: #f5c842;
+      border-color: var(--accent-text);
+      color: var(--accent-text);
       font-weight: 700;
       background: var(--order-bg);
     }
@@ -441,7 +447,7 @@
 
     .ocr-box h2 {
       font-size: 0.95rem;
-      color: #f5c842;
+      color: var(--accent-text);
       margin-bottom: 12px;
     }
 
@@ -494,7 +500,7 @@
     .ocr-row input::-webkit-outer-spin-button,
     .ocr-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-    .ocr-row input:focus { border-color: #f5c842; }
+    .ocr-row input:focus { border-color: var(--accent-text); }
 
     .ocr-actions {
       display: flex;
@@ -565,7 +571,7 @@
     .page-tab.active {
       background: #f5c842;
       color: #1a1a1a;
-      border-color: #f5c842;
+      border-color: var(--accent-text);
     }
 
     /* 品目設定パネル */
@@ -575,7 +581,7 @@
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 8px;
-      color: #f5c842;
+      color: var(--accent-text);
       font-size: 0.85rem;
       cursor: pointer;
       margin-bottom: 8px;
@@ -611,7 +617,7 @@
       font-size: 16px;
       outline: none;
     }
-    .settings-name-input:focus { border-color: #f5c842; }
+    .settings-name-input:focus { border-color: var(--accent-text); }
     .settings-lbl { font-size: 0.7rem; color: var(--text-mute); flex-shrink: 0; }
     .settings-target-input {
       width: 50px;
@@ -626,7 +632,7 @@
       outline: none;
       -moz-appearance: textfield;
     }
-    .settings-target-input:focus { border-color: #f5c842; }
+    .settings-target-input:focus { border-color: var(--accent-text); }
     .settings-target-input::-webkit-outer-spin-button,
     .settings-target-input::-webkit-inner-spin-button { -webkit-appearance: none; }
     .settings-unit-input {
@@ -641,7 +647,7 @@
       text-align: center;
       outline: none;
     }
-    .settings-unit-input:focus { border-color: #f5c842; }
+    .settings-unit-input:focus { border-color: var(--accent-text); }
     .settings-course-wrap {
       display: flex;
       flex-direction: column;
@@ -658,7 +664,7 @@
       width: 18px;
       height: 18px;
       cursor: pointer;
-      accent-color: #f5c842;
+      accent-color: var(--accent-text);
     }
 
     /* カレンダー */
@@ -668,7 +674,7 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    .cal-title { font-size: 1.05rem; font-weight: 700; color: #f5c842; }
+    .cal-title { font-size: 1.05rem; font-weight: 700; color: var(--accent-text); }
     .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -701,7 +707,7 @@
     .cal-cell:active { background: var(--surface3); }
     .cal-cell.empty { background: transparent; cursor: default; border: none; }
     .cal-cell.kyuujitsu { background: var(--surface4); cursor: default; }
-    .cal-cell.active-day { border-color: #f5c842; background: var(--cal-active-bg); }
+    .cal-cell.active-day { border-color: var(--accent-text); background: var(--cal-active-bg); }
     .cal-cell.sup-off-day { border-color: var(--cal-supoff-border); background: var(--cal-supoff-bg); }
     .cal-date { font-size: 0.95rem; font-weight: 700; color: var(--text); }
     .cal-cell.sun .cal-date  { color: #e06060; }
@@ -719,14 +725,14 @@
       width: 100%;
       text-align: center;
     }
-    .cal-badge.order    { background: #2e2400; color: #f5c842; }
+    .cal-badge.order    { background: #2e2400; color: var(--accent-text); }
     .cal-badge.delivery { background: #002530; color: #7ec8e3; }
     .cal-badge.sup-off  { background: #300000; color: #e06060; }
     .cal-edit-btn { display: none; }
     .cal-legend { display: none; }
     /* 発注バッジ */
     .cal-badge.order-1  { background: #1e2a00; color: #a8d060; }
-    .cal-badge.order-2  { background: #2e2000; color: #f5c842; }
+    .cal-badge.order-2  { background: #2e2000; color: var(--accent-text); }
     .cal-badge.order-3  { background: #2e1500; color: #ff9933; }
     .cal-badge.no-order { background: var(--no-order-bg); color: var(--no-order-text); }
     .cal-badge.store-off{ background: #2a0010; color: #ff6090; }
@@ -753,7 +759,7 @@
     .cal-sheet-title {
       font-size: 1rem;
       font-weight: 700;
-      color: #f5c842;
+      color: var(--accent-text);
       margin-bottom: 16px;
       text-align: center;
     }
@@ -796,8 +802,8 @@
       cursor: pointer;
       text-align: center;
     }
-    .cal-order-btn.active { border-color: #f5c842; background: #2e2400; color: #f5c842; }
-    .cal-order-btn.active-2 { border-color: #f5c842; background: #2e2000; color: #f5c842; }
+    .cal-order-btn.active { border-color: var(--accent-text); background: #2e2400; color: var(--accent-text); }
+    .cal-order-btn.active-2 { border-color: var(--accent-text); background: #2e2000; color: var(--accent-text); }
     .cal-order-btn.active-3 { border-color: #ff9933; background: #2e1500; color: #ff9933; }
     .cal-sheet-confirm {
       width: 100%;
@@ -839,7 +845,7 @@
     }
     .raw-header h2 {
       font-size: 0.95rem;
-      color: #f5c842;
+      color: var(--accent-text);
     }
     .raw-table-wrapper {
       border-radius: 8px;
@@ -859,7 +865,7 @@
       text-align: center;
       font-size: 0.7rem;
       font-weight: 600;
-      color: #f5c842;
+      color: var(--accent-text);
       border-bottom: 2px solid var(--border);
     }
     .raw-table thead th:first-child { text-align: left; padding-left: 8px; }
@@ -890,7 +896,7 @@
       -moz-appearance: textfield;
     }
     .raw-table td:first-child input { text-align: left; }
-    .raw-table td input:focus { border-color: #f5c842; }
+    .raw-table td input:focus { border-color: var(--accent-text); }
     .raw-table td input[type="number"]::-webkit-outer-spin-button,
     .raw-table td input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
     .raw-del-btn {
