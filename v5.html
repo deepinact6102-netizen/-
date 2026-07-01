@@ -378,7 +378,7 @@
     }
 
     .day-toggle button {
-      padding: 4px 10px;
+      padding: 4px 9px;
       border-radius: 5px;
       border: 1px solid var(--border);
       background: var(--input-bg);
@@ -975,6 +975,7 @@
   <div class="option-group">
     <span class="option-label">注文日数</span>
     <div class="day-toggle">
+      <button id="days0" onclick="setOrderDays(0)">なし</button>
       <button id="days1" class="active" onclick="setOrderDays(1)">1日</button>
       <button id="days2" onclick="setOrderDays(2)">2日</button>
       <button id="days3" onclick="setOrderDays(3)">3日</button>
@@ -1063,6 +1064,7 @@
   <div class="option-group">
     <span class="option-label">注文日数</span>
     <div class="day-toggle">
+      <button id="rdays0" onclick="rawSetOrderDays(0)">なし</button>
       <button id="rdays1" class="active" onclick="rawSetOrderDays(1)">1日</button>
       <button id="rdays2" onclick="rawSetOrderDays(2)">2日</button>
       <button id="rdays3" onclick="rawSetOrderDays(3)">3日</button>
@@ -1217,7 +1219,7 @@
 
   function setOrderDays(n) {
     orderDays = n;
-    [1,2,3].forEach(i => {
+    [0,1,2,3].forEach(i => {
       document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
     });
     updateCourseBadge();
@@ -1445,6 +1447,8 @@
 
   function calcForecast(idx) {
     const item = items[idx];
+    // 注文なし（0日）の日は予想0・発注0
+    if (orderDays === 0) return 0;
     // レバーは特例：スキップ納品日は0、それ以外は10本×注文日数で固定
     if (item.fixedDeliveryPerDay != null) {
       const delEl = document.getElementById(`delivery_${idx}`);
@@ -1852,7 +1856,7 @@
 
   function rawSetOrderDays(n) {
     rawOrderDays = n;
-    [1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === n));
+    [0,1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === n));
     rawCalcAll();
   }
 
@@ -1870,6 +1874,8 @@
 
   function rawCalcForecast(idx) {
     const item = rawItems[idx];
+    // 注文なし（0日）の日は予想0・発注0
+    if (rawOrderDays === 0) return 0;
     const coursePeople = parseInt(document.getElementById('rawCoursePeople').value) || 0;
     const remaining    = parseInt(document.getElementById(`rrem_${idx}`)?.value) || 0;
     const tomorrowDel  = rawGetTomorrowDelivery(idx) ?? item.target;
