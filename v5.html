@@ -1222,6 +1222,10 @@
     [0,1,2,3].forEach(i => {
       document.getElementById(`days${i}`)?.classList.toggle('active', i === n);
     });
+    // カレンダーにも保存（他の日付・カレンダーページと共有）
+    const { _auto, ...rest } = getPlan(currentDate);
+    planData[currentDate] = { ...rest, orderDays: n };
+    savePlanData();
     updateCourseBadge();
     calcAll();
   }
@@ -1391,7 +1395,16 @@
     return { values: data ? data.order : items.map(() => 0), fromDate };
   }
 
+  // カレンダーで設定した注文日数をこの日付に反映（計算はしない）
+  function syncOrderDaysFromPlan() {
+    orderDays = getPlan(currentDate).orderDays;
+    [0,1,2,3].forEach(i => {
+      document.getElementById(`days${i}`)?.classList.toggle('active', i === orderDays);
+    });
+  }
+
   function renderTable() {
+    syncOrderDaysFromPlan();
     const date = currentDate;
     const data = loadDate(date);
     const prevData = loadDate(addDaysSkipSunday(date, -1));
@@ -1574,6 +1587,10 @@
     document.getElementById('tab-yaki').classList.toggle('active', page === 'yaki');
     document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
     document.getElementById('tab-cal').classList.toggle('active', page === 'cal');
+    if (page === 'yaki') {
+      buildDayTabs();
+      renderTable();
+    }
     if (page === 'raw') {
       document.getElementById('rawDatePicker').value = rawCurrentDate;
       rawBuildDayTabs();
