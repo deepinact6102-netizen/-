@@ -1405,6 +1405,11 @@
 
   function renderTable() {
     syncOrderDaysFromPlan();
+    // 日付を移動したらコース人数を0にリセット
+    const cp = document.getElementById('coursePeople');
+    if (cp) cp.value = 0;
+    const cb = document.getElementById('courseBadge');
+    if (cb) cb.textContent = '';
     const date = currentDate;
     const data = loadDate(date);
     const prevData = loadDate(addDaysSkipSunday(date, -1));
@@ -1953,6 +1958,9 @@
   }
 
   function rawRenderTable() {
+    // 日付を移動したらコース人数を0にリセット
+    const rcp = document.getElementById('rawCoursePeople');
+    if (rcp) rcp.value = 0;
     const date = rawCurrentDate;
     const data = rawLoadDate(date);
     const prevData = rawLoadDate(addDaysSkipSunday(date, -1));
