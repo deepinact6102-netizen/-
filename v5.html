@@ -1923,13 +1923,13 @@
   function rawUpdateForecast(idx) {
     const val = rawCalcForecast(idx);
     document.getElementById(`rfore_${idx}`).value = val;
-    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    document.getElementById(`rord_${idx}`).value = val;
     rawOnOrderChange();
   }
 
   function rawSyncOrder(idx) {
     const val = parseInt(document.getElementById(`rfore_${idx}`).value) || 0;
-    document.getElementById(`rord_${idx}`).value = ceilTo5(val);
+    document.getElementById(`rord_${idx}`).value = val;
     rawOnOrderChange();
   }
 
@@ -1958,7 +1958,7 @@
     rawItems.forEach((_, idx) => {
       const fval = rawCalcForecast(idx);
       document.getElementById(`rfore_${idx}`).value = fval;
-      document.getElementById(`rord_${idx}`).value = ceilTo5(fval);
+      document.getElementById(`rord_${idx}`).value = fval;
     });
     rawOnOrderChange();
   }
