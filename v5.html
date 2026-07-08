@@ -1882,9 +1882,19 @@
     rawSaveDate(rawCurrentDate, rawGetCurrentData());
   }
 
+  // カレンダー（planData）で設定した注文日数をこの日付に反映（計算はしない）
+  function syncRawOrderDaysFromPlan() {
+    rawOrderDays = getPlan(rawCurrentDate).orderDays;
+    [0,1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === rawOrderDays));
+  }
+
   function rawSetOrderDays(n) {
     rawOrderDays = n;
     [0,1,2,3].forEach(i => document.getElementById(`rdays${i}`)?.classList.toggle('active', i === n));
+    // カレンダー・焼き鳥ページと共有（注文日数をリンク）
+    const { _auto, ...rest } = getPlan(rawCurrentDate);
+    planData[rawCurrentDate] = { ...rest, orderDays: n };
+    savePlanData();
     rawCalcAll();
   }
 
@@ -1964,6 +1974,7 @@
   }
 
   function rawRenderTable() {
+    syncRawOrderDaysFromPlan();
     const date = rawCurrentDate;
     const data = rawLoadDate(date);
     // その日付に保存されたコース人数を復元（無ければ0）
