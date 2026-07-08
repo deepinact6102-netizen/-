@@ -1590,6 +1590,9 @@
   // ---- ページ切り替え ----
   let currentPage = 'yaki';
   function switchPage(page) {
+    // 離れるページの日付を引き継ぐ（焼き鳥⇔原料で日付を共有）
+    if (currentPage === 'yaki')      rawCurrentDate = currentDate;
+    else if (currentPage === 'raw')  currentDate = rawCurrentDate;
     currentPage = page;
     document.getElementById('page-yaki').style.display = page === 'yaki' ? 'block' : 'none';
     document.getElementById('page-raw').style.display  = page === 'raw'  ? 'block' : 'none';
@@ -1598,6 +1601,7 @@
     document.getElementById('tab-raw').classList.toggle('active', page === 'raw');
     document.getElementById('tab-cal').classList.toggle('active', page === 'cal');
     if (page === 'yaki') {
+      document.getElementById('datePicker').value = currentDate;
       buildDayTabs();
       renderTable();
     }
