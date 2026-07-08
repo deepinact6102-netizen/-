@@ -157,14 +157,17 @@
     return `
       <div class="form">
         <div class="form-head">
-          <span class="form-title">焼き鳥 残数</span>
+          <span class="form-title">焼き鳥・串焼き</span>
           <span class="form-date">日付 <span class="line"></span></span>
         </div>
         <div class="rows">${rows}</div>
       </div>`;
   }
 
-  const names = getItemNames();
+  // 10品ちょうどに整える（多ければ切り、少なければ空欄で補う）
+  let names = getItemNames().slice(0, 10);
+  while (names.length < 10) names.push('');
+
   const sheet = document.getElementById('sheet');
   sheet.innerHTML = Array.from({ length: 6 }, () => buildForm(names)).join('');
 </script>
