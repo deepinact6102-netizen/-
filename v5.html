@@ -605,6 +605,7 @@
     .settings-item-row {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
       padding: 5px 0;
       border-bottom: 1px solid var(--border4);
@@ -1490,6 +1491,12 @@
     return n <= 0 ? 0 : Math.ceil(n / 5) * 5;
   }
 
+  // パック単位で切り上げ（原料用）
+  function ceilToPack(n, pack) {
+    const p = pack > 0 ? pack : 1;
+    return n <= 0 ? 0 : Math.ceil(n / p) * p;
+  }
+
   function updateForecast(idx) {
     const val = calcForecast(idx);
     document.getElementById(`forecast_${idx}`).value = val;
@@ -1849,15 +1856,15 @@
   // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
   let rawItemDefs = JSON.parse(localStorage.getItem('yakitori_raw_item_defs') ||
     JSON.stringify(Array.from({length:10}, () => ({name:'', target:10, unit:'本'}))));
-  // 既存データにunitが無い場合は補完
-  rawItemDefs = rawItemDefs.map(d => ({ unit: '本', ...d }));
+  // 既存データにunit/packSizeが無い場合は補完
+  rawItemDefs = rawItemDefs.map(d => ({ unit: '本', packSize: 1, ...d }));
 
   function saveRawItemDefs() {
     localStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
   }
 
   function buildRawItems() {
-    return rawItemDefs.map((d, i) => ({ name: d.name, target: d.target, unit: d.unit || '本', course: false, rawCustom: true, rawIdx: i }));
+    return rawItemDefs.map((d, i) => ({ name: d.name, target: d.target, unit: d.unit || '本', packSize: d.packSize || 1, course: false, rawCustom: true, rawIdx: i }));
   }
 
   let rawItems = buildRawItems();
@@ -1937,13 +1944,13 @@
   function rawUpdateForecast(idx) {
     const val = rawCalcForecast(idx);
     document.getElementById(`rfore_${idx}`).value = val;
-    document.getElementById(`rord_${idx}`).value = val;
+    document.getElementById(`rord_${idx}`).value = ceilToPack(val, rawItems[idx].packSize);
     rawOnOrderChange();
   }
 
   function rawSyncOrder(idx) {
     const val = parseInt(document.getElementById(`rfore_${idx}`).value) || 0;
-    document.getElementById(`rord_${idx}`).value = val;
+    document.getElementById(`rord_${idx}`).value = ceilToPack(val, rawItems[idx].packSize);
     rawOnOrderChange();
   }
 
@@ -1972,7 +1979,7 @@
     rawItems.forEach((_, idx) => {
       const fval = rawCalcForecast(idx);
       document.getElementById(`rfore_${idx}`).value = fval;
-      document.getElementById(`rord_${idx}`).value = fval;
+      document.getElementById(`rord_${idx}`).value = ceilToPack(fval, rawItems[idx].packSize);
     });
     rawOnOrderChange();
   }
@@ -2029,6 +2036,8 @@
         <span class="settings-lbl">目安</span>
         <input type="number" class="settings-target-input" id="ritarget_${idx}" value="${item.target || ''}" oninput="updateRawItemTarget(${idx})">
         <input type="text" class="settings-unit-input" id="riunit_${idx}" value="${item.unit || '本'}" placeholder="単位" oninput="updateRawItemUnit(${idx})">
+        <span class="settings-lbl">1パック</span>
+        <input type="number" class="settings-target-input" id="ripack_${idx}" value="${item.packSize || 1}" min="1" oninput="updateRawItemPack(${idx})">
       </div>
     `).join('');
   }
@@ -2050,6 +2059,13 @@
   function updateRawItemUnit(idx) {
     rawSaveCurrent();
     rawItemDefs[idx].unit = document.getElementById(`riunit_${idx}`).value;
+    rawItems = buildRawItems();
+    saveRawItemDefs();
+    rawRenderTable();
+  }
+  function updateRawItemPack(idx) {
+    rawSaveCurrent();
+    rawItemDefs[idx].packSize = parseInt(document.getElementById(`ripack_${idx}`).value) || 1;
     rawItems = buildRawItems();
     saveRawItemDefs();
     rawRenderTable();
