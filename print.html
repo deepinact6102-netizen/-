@@ -117,7 +117,7 @@
 <body>
 
 <div class="toolbar">
-  <h1>🍢 焼き鳥 残数記録用紙</h1>
+  <h1>🍢 焼き鳥・串焼き</h1>
   <p>
     A4に6枚印刷されます。営業終了後、各品目の残数を大きくハッキリと枠内に書いてください。<br>
     記入した1枠（1枚分）をカメラで撮影すると、アプリが数字を読み取ります。
@@ -164,9 +164,9 @@
       </div>`;
   }
 
-  // 10品ちょうどに整える（多ければ切り、少なければ空欄で補う）
-  let names = getItemNames().slice(0, 10);
-  while (names.length < 10) names.push('');
+  // 11品ちょうどに整える（多ければ切り、少なければ空欄で補う）
+  let names = getItemNames().slice(0, 11);
+  while (names.length < 11) names.push('');
 
   const sheet = document.getElementById('sheet');
   sheet.innerHTML = Array.from({ length: 6 }, () => buildForm(names)).join('');
