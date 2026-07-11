@@ -935,6 +935,19 @@
 </head>
 <body>
 
+<!-- アクセスコード ゲート画面 -->
+<div id="accessGate" style="display:none;position:fixed;inset:0;background:#1a1a1a;z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="max-width:340px;width:100%;background:#242424;border-radius:14px;padding:28px 22px;text-align:center;">
+    <div style="font-size:1.2rem;font-weight:700;color:#f5c842;margin-bottom:6px;">🍢 串焼き・焼き鳥 発注表</div>
+    <div style="font-size:0.85rem;color:#aaa;margin-bottom:20px;">ご購入時にメールでお送りしたアクセスコードを入力してください</div>
+    <input type="text" id="accessCodeInput" placeholder="例: 7F3K-9QRT" style="width:100%;padding:12px;font-size:1.1rem;text-align:center;letter-spacing:2px;border-radius:8px;border:1px solid #555;background:#1a1a1a;color:#f0e6d3;outline:none;text-transform:uppercase;">
+    <button id="accessCodeBtn" onclick="submitAccessCode()" style="width:100%;margin-top:14px;padding:12px;font-size:1rem;font-weight:700;border:none;border-radius:8px;background:#f5c842;color:#1a1a1a;cursor:pointer;">確認</button>
+    <div id="accessCodeError" style="color:#e06060;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
 <div style="display:flex;align-items:center;justify-content:space-between;">
   <h1>🍢 串焼き・焼き鳥 発注表</h1>
   <button id="themeToggleBtn" onclick="toggleTheme()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;">🌙</button>
@@ -2256,5 +2269,80 @@
     });
   }
 </script>
+
+</div><!-- /appRoot -->
+
+<script>
+  // ---- アクセスコード ゲート ----
+  const ACCESS_STORAGE_KEY = 'yakitori_access_code';
+
+  function showApp() {
+    document.getElementById('accessGate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+  }
+
+  function showGate() {
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('accessGate').style.display = 'flex';
+    document.getElementById('accessCodeInput').focus();
+  }
+
+  async function submitAccessCode() {
+    const input = document.getElementById('accessCodeInput');
+    const errEl = document.getElementById('accessCodeError');
+    const btn = document.getElementById('accessCodeBtn');
+    const code = input.value.trim().toUpperCase();
+    if (!code) {
+      errEl.textContent = 'コードを入力してください';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '確認中…';
+    errEl.textContent = '';
+    try {
+      const res = await fetch('/api/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        localStorage.setItem(ACCESS_STORAGE_KEY, code);
+        showApp();
+      } else {
+        errEl.textContent = 'コードが正しくありません。ご確認の上、再度入力してください。';
+      }
+    } catch (e) {
+      errEl.textContent = '通信エラーが発生しました。時間をおいて再度お試しください。';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '確認';
+    }
+  }
+
+  document.getElementById('accessCodeInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitAccessCode();
+  });
+
+  // 起動時：保存済みコードがあれば再検証してそのまま通す
+  (async function initGate() {
+    const saved = localStorage.getItem(ACCESS_STORAGE_KEY);
+    if (!saved) { showGate(); return; }
+    try {
+      const res = await fetch('/api/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: saved }),
+      });
+      const data = await res.json();
+      if (data.valid) showApp();
+      else { localStorage.removeItem(ACCESS_STORAGE_KEY); showGate(); }
+    } catch (e) {
+      // オフライン等で確認できない場合は、以前有効だったコードなのでそのまま使わせる
+      showApp();
+    }
+  })();
+</script>
+
 </body>
 </html>
