@@ -91,15 +91,22 @@ export default async function handler(req, res) {
     }
 
     const code = generateCode();
+    const subscriptionId = session.subscription || null; // サブスクの場合はサブスク番号が入る
 
-    // Redisに保存: code -> { email, active, createdAt }（JSON文字列で保存）
+    // Redisに保存: code -> { email, active, createdAt, subscriptionId }（JSON文字列で保存）
     const redis = getRedis();
     await redis.set(`code:${code}`, JSON.stringify({
       email,
       active: true,
       stripeSessionId: session.id,
+      subscriptionId,
       createdAt: Date.now(),
     }));
+
+    // 解約時に逆引きできるよう、サブスク番号 -> コード の対応も保存
+    if (subscriptionId) {
+      await redis.set(`sub:${subscriptionId}`, code);
+    }
 
     try {
       await sendCodeEmail(email, code);
@@ -111,9 +118,21 @@ export default async function handler(req, res) {
 
   // サブスク解約時にコードを無効化
   if (event.type === 'customer.subscription.deleted') {
-    // 必要なら subscription.id と code を紐付けて無効化する処理をここに追加
-    // (簡易版のためこのイベントは現状ログのみ)
-    console.log('サブスク解約イベント受信:', event.data.object.id);
+    const subscriptionId = event.data.object.id;
+    const redis = getRedis();
+    const code = await redis.get(`sub:${subscriptionId}`);
+    if (code) {
+      const raw = await redis.get(`code:${code}`);
+      if (raw) {
+        const record = JSON.parse(raw);
+        record.active = false; // 無効化
+        record.canceledAt = Date.now();
+        await redis.set(`code:${code}`, JSON.stringify(record));
+        console.log('サブスク解約によりコードを無効化:', code);
+      }
+    } else {
+      console.log('解約イベント受信（対応コードなし）:', subscriptionId);
+    }
   }
 
   return res.status(200).json({ received: true });
