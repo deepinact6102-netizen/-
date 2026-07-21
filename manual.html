@@ -219,7 +219,16 @@
   <p>取扱説明書</p>
 </header>
 
-<a class="app-link" href="./v5.html">▶ アプリを開く</a>
+<a class="app-link" id="backToApp" href="./v5.html">▶ アプリを開く</a>
+<script>
+  (function(){
+    var ref = document.referrer || '';
+    if (ref.indexOf('demo.html') !== -1) {
+      var a = document.getElementById('backToApp');
+      if (a) { a.setAttribute('href', './demo.html'); a.textContent = '▶ デモに戻る'; }
+    }
+  })();
+</script>
 
 <!-- 発注の基本ルール -->
 <section style="max-width:480px;margin:0 auto 16px;padding:0 16px;">
