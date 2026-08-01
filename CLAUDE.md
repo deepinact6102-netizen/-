@@ -79,13 +79,29 @@ PM が全員を直接指揮・監視・受領できる唯一の方法なので�
    現仕様と矛盾しており誤読を招く。
 10. **`print.html:122` の「A4に6枚」は誤り**（実装は9枚）。
 
-### リポジトリから判定できない事項（ユーザーに要確認）
+### ユーザーに確認して確定した事項（2026-08-01）
 
-- mycomise.com の実ホスティング先（Vercel か）。`vercel.json` も CNAME も無い。
+- **ホスティングは Vercel。** mycomise.com は Vercel 配信。
+- **Stripe の商品はサブスク**（買い切りではない）。
+- **GitHub Pages は有効**（API で `has_pages: true` を確認）。リポジトリは public。
+  → `https://deepinact6102-netizen.github.io/-/` が生きており、そこには API が無いため
+  `/api/verify-code` が404 → 旧コードのフェイルオープンで認証を素通りできる状態だった。
+  応急処置として修正済みの画面ファイル4本を `gh-pages` にコピー済み（コミット `5cb2dc3`）。
+  **恒久対応はユーザーが Settings → Pages → Source を None にすること。**
+
+### 未確認のまま残っている事項
+
 - `mycomise-api/` のデプロイ方法。現状のままルートをデプロイすると関数パスが
   `/mycomise-api/api/verify-code` になり、アプリ側の `fetch('/api/verify-code')` と一致しない。
-- `gh-pages` が現役か否か。現役なら上記5により認証を素通りできる。
-- Stripe の商品が買い切りかサブスクか。
+  Vercel の Root Directory 設定次第。
+- Stripe アカウントの既定 API バージョン。`invoice.subscription` が新旧どちらの形かで
+  `stripe-webhook.js` のフォールバックを片方に寄せられる。
+
+### ⚠️ リポジトリ設定の問題（ユーザー操作が必要）
+
+**既定ブランチが `claude/yakitori-app-component-SoIDX`（4月の初日のコミット）になっている。**
+新しいセッションはここから始まるため、放置すると毎回「化石の上で作業する」事故が起きる。
+`Settings → General → Default branch` を `claude/yakitori-order-table-lvTcH` に変更すべき。
 
 ## 決定ログ
 
