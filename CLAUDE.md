@@ -19,9 +19,27 @@
 
 ## リポジトリ
 
-- 開発ブランチ: `claude/pm-role-team-management-ybepo0`
-- 構成: `yakitori_app.jsx` — 焼き鳥注文アプリの React コンポーネント（単一ファイル、
-  インラインスタイル、ビルド設定・テスト・package.json は未整備）。
+**プロダクト: 焼き鳥店向けの発注・在庫管理ツール（mycomise）。** 4ヶ月・107コミットの実績あり。
+単体HTML（インラインJS）で構成され、PWA 対応（`manifest.json` / `sw.js`）。
+`mycomise-api/` に Stripe 決済 webhook・アクセスコード認証・Redis 接続があり、
+**独自ドメイン mycomise.com はこのプロダクトのもの**と判断される。
+
+主要ファイル: `index.html`（`yakitori_order.html` へリダイレクト）, `yakitori_order.html`,
+`yakitori_order_v2.html`, `v2〜v5.html`, `demo.html`（アクセスコード不要の体験版）,
+`manual.html`（説明書）, `print.html`（残数記録用紙）, `mycomise-api/`。
+※ 版が多数あり、どれが現行かは要確認。
+
+### ブランチ構成（※ main / master は存在しない・PR も Issue も 0件）
+
+| ブランチ | 位置づけ |
+|---|---|
+| `claude/yakitori-order-table-lvTcH` | **本体。**4月〜7/21 の主力開発（107コミット） |
+| `gh-pages` | 公開用。本体よりわずかに古い（6ファイル差分） |
+| `claude/pm-role-team-management-ybepo0` | 現行の作業ブランチ。本体の上にリベース済み |
+| `yakitori-app-component-SoIDX` 他3本 | 4〜5月の初期作業。役目を終えている |
+
+**注意: 新しいセッションは古いブランチから枝分かれしていることがある。** 着手前に必ず
+`git merge-base` で本体との関係を確認し、化石の上で作業していないか検証すること。
 
 ## 環境の制約（重要・引っかかりやすい）
 
@@ -43,3 +61,6 @@ PM が全員を直接指揮・監視・受領できる唯一の方法なので�
 - 2026-08-01: PM 体制を開始。上記の運用ルールを恒久ルールとして確定。
 - 2026-08-01: 並列化の方式をサブエージェントに決定（複数セッション統括は技術的に不可のため）。
 - 2026-08-01: mycomise.com の閲覧を試みたが環境のネットワークポリシーで遮断され断念。
+  ただしソースはリポジトリ内（本体ブランチの `mycomise-api/` 他）にあることが判明。
+- 2026-08-01: 作業ブランチが4ヶ月前の初期コミットから枝分かれしていたため、
+  本体ブランチ `claude/yakitori-order-table-lvTcH` の先頭へリベースして本流に合流（ユーザー判断）。
