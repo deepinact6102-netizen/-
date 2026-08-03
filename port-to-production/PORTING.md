@@ -3,89 +3,114 @@
 2026-08-01〜08-03 にこのリポジトリ（`deepinact6102-netizen/-`）で作った修正5件を、
 本番リポジトリ `mycomise/mycomise-1p` の `main` へ移すための一式。
 
-## ⚠️ なぜここに置いてあるのか
+**移植作業そのものは完了・検証済み。** 残っているのは push だけ。
 
-**このリポジトリを持つセッションからは `mycomise/mycomise-1p` に触れられない。**
-1セッションに追加できるのは同一所有者のリポジトリだけで、`add_repo` は次を返す:
+## 状況
+
+本番リポジトリは**公開**なので、このセッションからも `git clone` で**読める**。
+そのため差分確認・パッチ適用・検証はすべて実機の本番コードに対して実施済み。
+しかし **push は 403 で拒否される**（このセッションの認証情報は `deepinact6102-netizen/-`
+にしか効かない）。`add_repo` も次を返す:
 
 ```
 cross-tier adds are not supported in v1: requested "mycomise/mycomise-1p"
 but session already has repos from owner(s) [deepinact6102-netizen]
 ```
 
-**`mycomise/mycomise-1p` を最初のソースにした新しいセッションを立てて、そこで作業すること。**
-そのセッションから、この一式は公開リポジトリとして取得できる:
+**push するには `mycomise/mycomise-1p` を最初のソースにした新しいセッションが必要。**
+
+## 適用方法（新しいセッションでの手順）
 
 ```bash
 git clone https://github.com/deepinact6102-netizen/-.git /tmp/src
 cd /tmp/src && git checkout claude/port-5-fixes-to-main-w2unym
-# パッチは port-to-production/patches/ にある
+
+cd <mycomise-1p のルート>   # main、cd5540e の状態
+git am /tmp/src/port-to-production/0001-port-five-fixes-to-production.patch
+git push origin main
 ```
 
-## ファイル配置の対応
+**これだけ。** 手で当て直す必要はない。
 
-| こちら（`-`） | 本番（`mycomise-1p`） |
+## 検証済みの事実（2026-08-03、実機の本番コードに対して確認）
+
+本番 `main` の HEAD は `cd5540e`（Vercel の最終デプロイと一致）。
+
+**本番の該当ファイルは、こちらの修正前の状態と1バイトも違わなかった。**
+
+| 本番のファイル | `-` の修正前（`a93e646`）との比較 |
 |---|---|
-| `mycomise-api/api/*.js` | `api/*.js`（リポジトリ直下） |
-| `mycomise-api/lib/*.js` | `lib/*.js`（リポジトリ直下） |
-| `v5.html` / `demo.html` / `print.html` | 同じ（直下） |
+| `v5.html` | **完全一致** |
+| `demo.html` | **完全一致** |
+| `print.html` | **完全一致** |
+| `manual.html` | **完全一致** |
+| `api/verify-code.js` | `mycomise-api/api/verify-code.js` と**完全一致** |
+| `api/stripe‐webhook.js` | `mycomise-api/api/stripe-webhook.js` と**完全一致** |
+| `lib/redis.js` | `mycomise-api/lib/redis.js` と**完全一致** |
+| `index.html` | **相違**（本番はLP。こちらはリダイレクト。→ 触らない） |
+| `package.json` | `mycomise-api/package.json` と**完全一致** |
 
-**パッチのパスは本番の配置に書き換え済み**なので、リポジトリのルートでそのまま
-`git apply` できる。`stripe-webhook.js` の `import { getRedis } from '../lib/redis.js'`
-は、どちらの配置でも `api/` の1つ上が `lib/` なので**書き換え不要**。
+つまり「本番の方が新しいかもしれない」という懸念は**空振り**だった。07-29 の最終デプロイ
+`cd5540e` は `index.html`（LP）だけの更新で、アプリ本体は 07-21 のまま止まっていた。
+**衝突なく移植できる。**
 
-## 適用前に必ず確認すること
-
-本番の画面ファイルはこちらより**新しい可能性がある**（本番の最終デプロイは 07-29 の `cd5540e`、
-こちらの画面ファイルの最終更新は 07-21）。**先に差分を取ること。**
-
-```bash
-# 本番リポジトリのルートで
-for f in v5.html demo.html print.html; do
-  echo "=== $f ==="; diff "$f" "/tmp/src/$f"
-done
-diff api/stripe-webhook.js /tmp/src/mycomise-api/api/stripe-webhook.js
-diff lib/redis.js          /tmp/src/mycomise-api/lib/redis.js
-```
-
-- **差分が無い、または修正5件の分だけ** → パッチをそのまま適用してよい。
-- **本番側に別の変更がある** → パッチは当たらない可能性が高い。下の「各修正の中身」を読んで
-  **手で当てる**。機械的なコピーは本番側の変更を消すので**しないこと**。
-
-## 適用
-
-```bash
-cd <mycomise-1p のルート>
-git apply --check port-to-production/patches/01-v5-auth-failopen.patch   # まず --check
-git apply           port-to-production/patches/01-v5-auth-failopen.patch
-```
-
-`05` と `01` は同じコミット（`c01b6e5`）の `v5.html` を分けたもの。**`05` → `01` の順**で当てる。
-`03` は `01`/`05` を当てた後の `v5.html` を前提にしている。**推奨順: 05 → 01 → 02 → 03 → 04。**
-
-| # | パッチ | 対象ファイル | 元コミット |
-|---|---|---|---|
-| 1 | `01-v5-auth-failopen.patch` | `v5.html` | `c01b6e5` |
-| 2 | `02-demo-localstorage-isolation.patch` | `demo.html`, `print.html` | `62d75c2` |
-| 3 | `03-ocr-name-matching.patch` | `v5.html`, `demo.html` | `d49aacf` |
-| 4 | `04-stripe-subscription.patch` | `api/stripe-webhook.js` | `49f55b3` |
-| 5 | `05-v5-gate-links.patch` | `v5.html` | `c01b6e5` |
-
-検証済み: この5枚を `-` 側の修正前の状態に当てると、`-` の現在のファイルと**バイト単位で一致**する。
-
-## 触ってはいけないもの
-
-- **`index.html` を変更しないこと。** 元コミット `c01b6e5` は `index.html` も変えているが、
-  それは `-` 側の話（`yakitori_order.html` → `demo.html` へのリダイレクト先修正）。
-  **本番の `index.html` は宣伝ページ（LP）で別物。パッチからは意図的に除外してある。**
-- **本番にしか無いファイル（LP用画像、`マニュアル.html` 等）を消さないこと。**
-- **`verify-code.js` の `source: 'repo:-'` は移植しないこと。** これは「本番がどちらの
-  リポジトリで動いているか」を判別するためにこちらに付けた目印（コミット `4b43605`）で、
-  本番に入れると逆に嘘の表示になる。5件のうちには含まれていない。
+検証内容:
+- 本番の pristine clone に `git am` → 成功。
+- 適用後の `v5.html` / `demo.html` / `print.html` / stripe webhook が、こちらの修正済み
+  ファイルと**バイト単位で一致**することを確認。
+- `index.html` が**変更されていない**ことを確認（`git diff cd5540e HEAD -- index.html` が空）。
+- 変更ファイルは4本のみ。本番にしか無いファイル（`exterior.jpg`, `mycomiselogo.jpg`,
+  `image.png`, `yakitori.jpg`, `privacy.html` 等）は**一切削除・変更していない**。
+- Node で構文確認: stripe webhook（ESM）および3ファイルのインライン `<script>` 全4ブロック、
+  いずれも構文エラーなし。
 
 ---
 
-# 各修正の中身（手で当てる場合の指針）
+# ⚠️ 移植とは別に見つかった問題（要判断）
+
+## 本番の `api/stripe‐webhook.js` のファイル名にUnicodeハイフンが入っている
+
+ファイル名の「‐」が **ASCIIのハイフン（`-` / U+002D）ではなく U+2010 HYPHEN**（バイト列 `e2 80 90`）。
+
+```
+api/stripe‐webhook.js   ← U+2010。見た目はほぼ同じだが別の文字
+api/verify-code.js      ← こちらは正常なASCII
+```
+
+Vercel はファイルパスをそのままルートにするため、この関数のエンドポイントは
+`/api/stripe‐webhook`（U+2010）になる。**Stripe 側の webhook URL が
+`https://mycomise.com/api/stripe-webhook`（ASCII）で登録されていれば、404 になり
+webhook は一度も発火していないことになる。**
+
+その場合の影響:
+- 購入しても**アクセスコードが自動発行・自動送信されない**
+- 解約してもコードが**失効しない**
+- 今回の修正4（サブスク状態の追随）を入れても、**そもそも呼ばれないので何も起きない**
+
+**確認してほしいこと:** Stripe ダッシュボード → Developers → Webhooks でエンドポイントURLを開き、
+
+- **配信履歴があり成功している** → URLは U+2010 版で登録されている。現状のままで動作中。
+  ファイル名を直すと**逆に壊れる**ので、直すなら Stripe 側のURLも同時に変更すること。
+- **404 が並んでいる / 配信履歴が無い** → webhook は動いていない。
+  ファイル名を ASCII の `stripe-webhook.js` に直す必要がある。
+
+**判断がつかなかったので、今回の移植ではファイル名を変えていない。**
+中身の修正だけを既存のファイル名に適用してある。リネームは1コマンドの後追い作業:
+
+```bash
+git mv "api/stripe‐webhook.js" api/stripe-webhook.js
+```
+
+## Stripe のイベント送信設定
+
+修正4はコードを入れるだけでは発火しない。ダッシュボードの webhook エンドポイントで
+**`customer.subscription.updated` と `invoice.payment_failed` が送信対象**になっているか
+確認すること。あわせて `RESEND_API_KEY` / `MAIL_FROM` が Vercel の環境変数にあるか
+（支払い失敗メールで使う）。
+
+---
+
+# 各修正の中身
 
 ## 1. アクセスコード認証のフェイルオープン封鎖（`v5.html`）
 
@@ -131,9 +156,9 @@ git apply           port-to-production/patches/01-v5-auth-failopen.patch
 - **名前が見つからない品目は空欄のまま。** 店主が埋める空欄の方が、気づかれない誤った数字より良い。
 - 位置ベースの割り当ては「**名前が1つも読めなかった場合**」のみ残し、その旨を画面に明示する。
 
-**`v5.html` と `demo.html` は本体約2200行が重複しているので、必ず両方に入れること。**
+`v5.html` と `demo.html` は本体約2200行が重複しているため、**両方に入れてある**。
 
-## 4. Stripe サブスク対応（`api/stripe-webhook.js`）
+## 4. Stripe サブスク対応（`api/stripe‐webhook.js`）
 
 **問題:** サブスク販売なのに `customer.subscription.deleted`（完全な解約）にしか反応せず、
 **カードが止まった購読者が、Stripe が再請求を試みる数週間ずっとフルアクセスを保っていた。**
@@ -154,11 +179,8 @@ git apply           port-to-production/patches/01-v5-auth-failopen.patch
 - `invoice.subscription` は API バージョンで形が変わるため
   `invoice.parent?.subscription_details?.subscription` にフォールバックする。
 
-**適用後に確認すること:**
-- Stripe ダッシュボードの webhook エンドポイントで、
-  **`customer.subscription.updated` と `invoice.payment_failed` の送信が有効になっているか。**
-  有効にしないとコードを入れても何も起きない。
-- `RESEND_API_KEY` / `MAIL_FROM` が Vercel の環境変数に入っているか（支払い失敗メールで使う）。
+`import { getRedis } from '../lib/redis.js'` は、`api/` の1つ上が `lib/` という関係が
+両リポジトリで同じなので**書き換え不要**だった。
 
 ## 5. `v5.html` のゲート画面に導線を追加
 
@@ -170,27 +192,41 @@ git apply           port-to-production/patches/01-v5-auth-failopen.patch
 
 ---
 
-# 移植後の動作確認
+# 移植しなかったもの
 
-本番稼働中のサービスなので、デプロイ後に最低限これだけは見ること。
+- **`index.html`**。元コミット `c01b6e5` は `index.html` も変えているが、それは `-` 側の
+  リダイレクト先修正（`yakitori_order.html` → `demo.html`）。
+  **本番の `index.html` はLPで別物なので除外した。**
+- **`verify-code.js` の `source: 'repo:-'`**（コミット `4b43605`）。これは「本番がどちらの
+  リポジトリで動いているか」を判別するためにこちらに付けた目印で、本番に入れると逆に嘘になる。
+- **`api/stripe‐webhook.js` のリネーム**。上記「要判断」の通り、Stripe 側の設定を
+  確認しないと直すべきか壊すべきでないかが決まらないため見送った。
+
+# デプロイ後の動作確認
+
+本番稼働中のサービスなので、最低限これだけは見ること。
 
 1. **`v5.html`**: 有効なコードで入れる／機内モードにしても7日以内なら開く／
    `yakitori_access_verified_at` を8日前に書き換えるとゲートに戻る。
 2. **`demo.html`**: デモで店舗名や残数をいじった後、`v5.html` の本番データが**無傷**なこと。
    DevTools の Application → Local Storage で `demo_` 付きのキーだけが増えているか。
+   **既存のデモ利用者の入力は引き継がれない**（キーが変わるため）。これは意図した動作。
 3. **OCR**: 記録用紙を1品目わざと塗りつぶして撮影し、**その品目だけが空欄**で
    他がズレていないこと。「◯品目中◯品目を読み取りました」の表示が出ること。
 4. **`print.html`**: デモから開くと `?demo=1` が付き、「← デモに戻る」になること。
 5. **Stripe**: テストモードでサブスクを `past_due` にして**アクセスが残る**こと、
    `canceled` にして**失効する**こと。
 
-# 関連する既知の問題（今回の5件には含まれない）
+# 本番側に残っている既知の問題（今回の5件には含まれない）
 
-`CLAUDE.md` と `PROJECT_HISTORY.md` に詳細がある。本番側でも残っている見込みのもの:
+実機の本番コードを見て確認したもの:
 
-- `manual.html` の「アプリを開く」が `document.referrer` 依存で、referrer が空だと
-  デモ利用者が `v5.html` に飛ばされる（`print.html` と同じ `?demo=1` 方式で直せる）。
-- 旧版ファイル（`yakitori_order.html`, `v2〜v4.html`）が本番にも残っているなら、
-  **認証ゲートが無いので直打ちで有料版相当が使える。** 要確認・要削除。
-- `verify-code` にレート制限が無く、1コードで台数無制限。
-- Redis のレコードに TTL が無く、解約済みのメールアドレスが永久に残る。
+- **`manual.html` の「アプリを開く」が `document.referrer` 依存。** referrer が空だと
+  デモ利用者が `v5.html`（ゲート）に飛ばされる。`print.html` と同じ `?demo=1` 方式で直せる。
+- **`verify-code` にレート制限が無い。** 1コードで台数無制限。
+- **Redis のレコードに TTL が無い。** 解約済みのメールアドレスが永久に残る。
+- **`lib/redis.js` にエラーハンドラが無い。**
+
+なお、本番には旧版ファイル（`yakitori_order.html`, `v2〜v4.html`）は**存在しなかった**ので、
+`-` 側で問題になっていた「旧版直打ちで認証を素通り」は本番では起きない。
+`sw.js` も無いので Service Worker 関連の問題も無い。

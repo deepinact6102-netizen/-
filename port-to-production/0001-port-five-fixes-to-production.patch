@@ -1,0 +1,848 @@
+From fef23dd34471524afa33c2b4d71170533ec709e4 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 3 Aug 2026 14:35:35 +0000
+Subject: [PATCH] Port the five fixes from the development repository
+
+These were written against deepinact6102-netizen/-, which does not deploy
+anywhere. Every file they touch here was byte-identical to that
+repository's pre-fix state, so the changes transfer without conflict.
+
+- The access gate opened the app unconditionally whenever the verify call
+  threw, so going offline bypassed it. Replace that with a 7-day offline
+  grace period measured from the last server-confirmed check, which
+  cannot renew itself while offline. A non-ok response now counts as a
+  communication failure rather than a rejection, so a server error no
+  longer deletes a paying customer's stored code.
+- The demo shared localStorage keys with the paid app on the same origin,
+  so trying the demo overwrote a real shop's ordering data. Route demo
+  reads and writes through a demo_ prefix, and let print.html select the
+  prefix from ?demo=1.
+- The tally-sheet reader dropped unparseable lines and then assigned the
+  remaining numbers to items in order, so one missed line shifted every
+  item after it and the shop ordered against another item's count. Match
+  each item by its printed name instead; an item whose name is not found
+  is left blank.
+- The webhook only reacted to outright cancellation, so a subscriber
+  whose card stopped working kept access for the weeks Stripe spends
+  retrying. Drive access from customer.subscription.updated, keeping
+  past_due deliberately valid, and notify on invoice.payment_failed
+  without revoking.
+- The gate was a dead end without a code, so link out to the demo and the
+  purchase page.
+
+index.html is left alone: it is the landing page here, not the redirect
+the development repository has.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_017yv1qkucuwWdD1fnHow8og
+---
+ "api/stripe\342\200\220webhook.js" | 136 ++++++++++++++++++++-
+ demo.html                          | 183 ++++++++++++++++++++++++-----
+ print.html                         |  12 +-
+ v5.html                            | 181 ++++++++++++++++++++++++++--
+ 4 files changed, 462 insertions(+), 50 deletions(-)
+
+diff --git "a/api/stripe\342\200\220webhook.js" "b/api/stripe\342\200\220webhook.js"
+index c2496e6..cd9fdd6 100644
+--- "a/api/stripe\342\200\220webhook.js"
++++ "b/api/stripe\342\200\220webhook.js"
+@@ -1,6 +1,8 @@
+ // Vercel Serverless Function: /api/stripe-webhook
+ // Stripeの決済完了(checkout.session.completed)を受け取り、
+ // アクセスコードを発行してVercel KVに保存し、購入者にメールで送信する。
++// あわせてサブスクの状態変化(customer.subscription.updated / deleted)で
++// コードの有効・無効を切り替え、支払い失敗(invoice.payment_failed)を購入者に通知する。
+ //
+ // 必要な環境変数（Vercelプロジェクトの Settings > Environment Variables で設定）:
+ //   STRIPE_SECRET_KEY       … Stripeダッシュボードの秘密鍵 (sk_live_... / sk_test_...)
+@@ -27,6 +29,33 @@ function readRawBody(req) {
+   });
+ }
+ 
++// サブスクの状態 → アクセス可否の対応表。
++// past_due は「あえて」有効のままにしている。これはStripeがカードに再請求を試みている
++// 最中の状態で、多くはカードの期限切れ。1回の失敗で発注業務を止める方が店にとって痛手なので、
++// Stripeが諦めて unpaid / canceled に移った時点で失効させる。ここを false にしないこと。
++const ACCESS_BY_STATUS = {
++  active: true,
++  trialing: true,
++  past_due: true,
++  unpaid: false,
++  canceled: false,
++  incomplete: false,
++  incomplete_expired: false,
++  paused: false,
++};
++
++// code:{CODE} を読み出してJSONに戻す。無い/壊れている場合は null。
++async function readCodeRecord(redis, code) {
++  const raw = await redis.get(`code:${code}`);
++  if (!raw) return null;
++  try {
++    return JSON.parse(raw);
++  } catch (parseErr) {
++    console.error('コードレコードのJSON解析に失敗:', code, parseErr.message);
++    return null;
++  }
++}
++
+ function generateCode() {
+   // 読み間違えにくい文字だけを使った8桁コード（例: 7F3K-9QRT）
+   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+@@ -64,6 +93,33 @@ async function sendCodeEmail(toEmail, code) {
+   }
+ }
+ 
++async function sendPaymentFailedEmail(toEmail, invoiceUrl) {
++  const res = await fetch('https://api.resend.com/emails', {
++    method: 'POST',
++    headers: {
++      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
++      'Content-Type': 'application/json',
++    },
++    body: JSON.stringify({
++      from: process.env.MAIL_FROM,
++      to: toEmail,
++      subject: '【mycomise】お支払いを確認できませんでした（カード情報のご確認のお願い）',
++      html: `
++        <p>いつもmycomiseをご利用いただきありがとうございます。</p>
++        <p>今回のご請求について、お支払いを確認できませんでした。カードの有効期限切れや限度額などが原因のことが多いです。</p>
++        <p>お手数ですが、下記よりお支払い方法のご確認・更新をお願いいたします。</p>
++        ${invoiceUrl ? `<p><a href="${invoiceUrl}">お支払いページを開く</a></p>` : ''}
++        <p>しばらくは今までどおりアプリをご利用いただけますが、お支払いが確認できないままですと、アクセスコードが使えなくなりご利用を停止させていただきます。</p>
++        <p>お心当たりのない場合や、ご不明な点がございましたら、このメールにご返信ください。</p>
++      `,
++    }),
++  });
++  if (!res.ok) {
++    const errText = await res.text();
++    throw new Error(`Resend送信失敗: ${res.status} ${errText}`);
++  }
++}
++
+ export default async function handler(req, res) {
+   if (req.method !== 'POST') {
+     return res.status(405).send('Method Not Allowed');
+@@ -122,9 +178,8 @@ export default async function handler(req, res) {
+     const redis = getRedis();
+     const code = await redis.get(`sub:${subscriptionId}`);
+     if (code) {
+-      const raw = await redis.get(`code:${code}`);
+-      if (raw) {
+-        const record = JSON.parse(raw);
++      const record = await readCodeRecord(redis, code);
++      if (record) {
+         record.active = false; // 無効化
+         record.canceledAt = Date.now();
+         await redis.set(`code:${code}`, JSON.stringify(record));
+@@ -135,5 +190,80 @@ export default async function handler(req, res) {
+     }
+   }
+ 
++  // サブスクの状態変化に追随してコードの有効・無効を切り替える
++  if (event.type === 'customer.subscription.updated') {
++    const subscription = event.data.object;
++    const status = subscription.status;
++    const eventAt = (event.created || Math.floor(Date.now() / 1000)) * 1000;
++
++    const redis = getRedis();
++    const code = await redis.get(`sub:${subscription.id}`);
++    if (!code) {
++      // この仕組みより前のサブスクや、ダッシュボードで手動作成したサブスクはここに来る
++      console.log('サブスク更新イベント受信（対応コードなし）:', subscription.id, status);
++      return res.status(200).json({ received: true, warning: 'no code for subscription' });
++    }
++
++    const record = await readCodeRecord(redis, code);
++    if (!record) {
++      console.error('サブスク更新イベント受信（コードレコードなし）:', code, subscription.id);
++      return res.status(200).json({ received: true, warning: 'no code record' });
++    }
++
++    const known = Object.prototype.hasOwnProperty.call(ACCESS_BY_STATUS, status);
++    if (!known) console.warn('未知のサブスク状態のため無効化:', status, subscription.id);
++    const shouldBeActive = known ? ACCESS_BY_STATUS[status] : false;
++
++    // 再送・順序逆転への備え: すでに適用した分より古いイベントは捨てる
++    const lastAppliedAt = Math.max(record.statusEventAt || 0, record.canceledAt || 0);
++    if (eventAt < lastAppliedAt) {
++      console.log('古いサブスク更新イベントのため無視:', subscription.id, status);
++      return res.status(200).json({ received: true, ignored: 'stale event' });
++    }
++
++    // 既存フィールド(email/stripeSessionId/createdAtなど)はそのまま残す。
++    // 同じイベントが再送されても書き込む内容は変わらない。
++    const wasActive = record.active === true;
++    record.active = shouldBeActive;
++    record.subscriptionStatus = status;
++    record.statusEventAt = eventAt;
++    if (wasActive !== shouldBeActive) record.statusChangedAt = Date.now();
++    await redis.set(`code:${code}`, JSON.stringify(record));
++    console.log('サブスク状態を反映:', code, status, shouldBeActive ? '有効' : '無効');
++  }
++
++  // 支払い失敗の通知（ここではアクセスを止めない。失効は上の状態遷移に任せる）
++  if (event.type === 'invoice.payment_failed') {
++    const invoice = event.data.object;
++    const rawSub = invoice.subscription || invoice.parent?.subscription_details?.subscription;
++    const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id || null;
++
++    if (!subscriptionId) {
++      console.log('支払い失敗イベント受信（サブスク以外）:', invoice.id);
++      return res.status(200).json({ received: true, warning: 'no subscription' });
++    }
++
++    const redis = getRedis();
++    const code = await redis.get(`sub:${subscriptionId}`);
++    if (!code) {
++      console.log('支払い失敗イベント受信（対応コードなし）:', subscriptionId);
++      return res.status(200).json({ received: true, warning: 'no code for subscription' });
++    }
++
++    const record = await readCodeRecord(redis, code);
++    if (!record?.email) {
++      console.error('支払い失敗イベント受信（宛先メール不明）:', code, subscriptionId);
++      return res.status(200).json({ received: true, warning: 'no email' });
++    }
++
++    try {
++      await sendPaymentFailedEmail(record.email, invoice.hosted_invoice_url);
++      console.log('支払い失敗を通知:', code);
++    } catch (mailErr) {
++      console.error('支払い失敗通知メールの送信エラー:', mailErr.message);
++      // メール失敗でStripeに再送させると無限リトライになるため、投げずに握りつぶす
++    }
++  }
++
+   return res.status(200).json({ received: true });
+ }
+diff --git a/demo.html b/demo.html
+index b96ddc3..1110c1d 100644
+--- a/demo.html
++++ b/demo.html
+@@ -938,7 +938,8 @@
+ <!-- デモ版バナー -->
+ <div style="background:#e07020;color:#fff;text-align:center;padding:8px 12px;font-size:0.85rem;font-weight:700;line-height:1.5;">
+   🍢 これはデモ版です（無料でお試しいただけます）<br>
+-  <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:inline-block;margin-top:6px;background:#fff;color:#e07020;text-decoration:none;padding:5px 16px;border-radius:6px;font-size:0.82rem;">▶ 購入して本番版を使う</a>
++  <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:inline-block;margin-top:6px;background:#fff;color:#e07020;text-decoration:none;padding:5px 16px;border-radius:6px;font-size:0.82rem;">▶ 購入して本番版を使う</a><br>
++  <a href="./v5.html" style="display:inline-block;margin-top:6px;color:#ffe8d5;text-decoration:underline;font-size:0.75rem;font-weight:400;">本番版をお持ちの方はこちら</a>
+ </div>
+ 
+ <div id="appRoot" style="display:block;">
+@@ -948,7 +949,7 @@
+   <button id="themeToggleBtn" onclick="toggleTheme()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;">🌙</button>
+ </div>
+ <a class="manual-link" href="./manual.html">📖 取扱説明書を見る</a>
+-<a class="manual-link" href="./print.html">🖨️ 焼き鳥 記録用紙を印刷</a>
++<a class="manual-link" href="./print.html?demo=1">🖨️ 焼き鳥 記録用紙を印刷</a>
+ 
+ <!-- 店舗名 -->
+ <div class="store-name-bar">
+@@ -1164,9 +1165,17 @@
+ <div class="toast" id="toast">保存しました</div>
+ 
+ <script>
++  // デモ版は本番アプリと同じオリジンで動くため、保存キーを demo_ で分離する
++  const LS_PREFIX = 'demo_';
++  const demoStorage = {
++    getItem(key)        { return localStorage.getItem(LS_PREFIX + key); },
++    setItem(key, value) { localStorage.setItem(LS_PREFIX + key, value); },
++    removeItem(key)     { localStorage.removeItem(LS_PREFIX + key); },
++  };
++
+   // テーマ初期化（関数定義より先に実行するため body クラスだけ先に設定）
+   (function(){
+-    const t = localStorage.getItem('yakitori_theme');
++    const t = demoStorage.getItem('yakitori_theme');
+     if(t === 'light') document.body.classList.add('light');
+   })();
+ 
+@@ -1179,16 +1188,16 @@
+ 
+   function toggleTheme() {
+     document.body.classList.toggle('light');
+-    localStorage.setItem('yakitori_theme', document.body.classList.contains('light') ? 'light' : 'dark');
++    demoStorage.setItem('yakitori_theme', document.body.classList.contains('light') ? 'light' : 'dark');
+     updateThemeBtn();
+   }
+ 
+   // カスタム品目（名称・目安を自由記入）
+-  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
++  let customItemDefs = JSON.parse(demoStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
+   customItemDefs = customItemDefs.map(d => ({ course: false, ...d }));
+ 
+   function saveCustomItemDefs() {
+-    localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
++    demoStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
+   }
+ 
+   // 全品目の名称・目安を編集可能にする（デフォルト値あり）
+@@ -1204,13 +1213,13 @@
+     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
+   ];
+ 
+-  let baseItemDefs = JSON.parse(localStorage.getItem('yakitori_base_item_defs') ||
++  let baseItemDefs = JSON.parse(demoStorage.getItem('yakitori_base_item_defs') ||
+     JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target, course: it.course }))));
+   // 既存データに course が無い場合は defaultBaseItems の値で補完
+   baseItemDefs = baseItemDefs.map((d, i) => ({ course: defaultBaseItems[i].course, ...d }));
+ 
+   function saveBaseItemDefs() {
+-    localStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
++    demoStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
+   }
+ 
+   const baseItems = defaultBaseItems; // 固定プロパティ（icon, course, fixedDeliveryPerDay）用
+@@ -1295,12 +1304,12 @@
+   function storageKey(dateStr) { return `yakitori_${dateStr}`; }
+ 
+   function loadDate(dateStr) {
+-    const raw = localStorage.getItem(storageKey(dateStr));
++    const raw = demoStorage.getItem(storageKey(dateStr));
+     return raw ? JSON.parse(raw) : null;
+   }
+ 
+   function saveDate(dateStr, data) {
+-    localStorage.setItem(storageKey(dateStr), JSON.stringify(data));
++    demoStorage.setItem(storageKey(dateStr), JSON.stringify(data));
+   }
+ 
+   function getCurrentData() {
+@@ -1378,7 +1387,7 @@
+       const mm = d.getMonth() + 1;
+       const dd = d.getDate();
+ 
+-      const hasData = !!localStorage.getItem(storageKey(dateStr));
++      const hasData = !!demoStorage.getItem(storageKey(dateStr));
+       const isActive = dateStr === currentDate;
+       const isToday  = dateStr === today;
+ 
+@@ -1570,14 +1579,14 @@
+ 
+   function clearDay() {
+     if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
+-    localStorage.removeItem(storageKey(currentDate));
++    demoStorage.removeItem(storageKey(currentDate));
+     buildDayTabs();
+     renderTable();
+   }
+ 
+   // ---- 店舗名 ----
+   function loadStoreName() {
+-    const name = localStorage.getItem('yakitori_store_name') || '';
++    const name = demoStorage.getItem('yakitori_store_name') || '';
+     const disp = document.getElementById('storeNameDisplay');
+     if (name) {
+       disp.textContent = name;
+@@ -1588,7 +1597,7 @@
+     }
+   }
+   function startEditStoreName() {
+-    const name = localStorage.getItem('yakitori_store_name') || '';
++    const name = demoStorage.getItem('yakitori_store_name') || '';
+     const input = document.getElementById('storeNameInput');
+     input.value = name;
+     document.getElementById('storeNameDisplay').style.display = 'none';
+@@ -1597,7 +1606,7 @@
+   }
+   function saveStoreName() {
+     const val = document.getElementById('storeNameInput').value.trim();
+-    localStorage.setItem('yakitori_store_name', val);
++    demoStorage.setItem('yakitori_store_name', val);
+     document.getElementById('storeNameInput').style.display = 'none';
+     document.getElementById('storeNameDisplay').style.display = '';
+     loadStoreName();
+@@ -1634,9 +1643,9 @@
+   // ---- カレンダー ----
+   // planData[dateStr] = { orderDays: 0|1|2|3, storeHoliday: bool, supplierHoliday: bool }
+   // orderDays: 0=発注なし, 1=1日分(デフォルト), 2=2日分, 3=3日分
+-  let planData = JSON.parse(localStorage.getItem('yakitori_cal_plan') || '{}');
++  let planData = JSON.parse(demoStorage.getItem('yakitori_cal_plan') || '{}');
+   function savePlanData() {
+-    localStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
++    demoStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
+   }
+   function getPlan(dateStr) {
+     return planData[dateStr] || { orderDays: 1, storeHoliday: false, supplierHoliday: false };
+@@ -1863,13 +1872,13 @@
+   }
+ 
+   // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
+-  let rawItemDefs = JSON.parse(localStorage.getItem('yakitori_raw_item_defs') ||
++  let rawItemDefs = JSON.parse(demoStorage.getItem('yakitori_raw_item_defs') ||
+     JSON.stringify(Array.from({length:10}, () => ({name:'', target:10, unit:'本'}))));
+   // 既存データにunit/packSizeが無い場合は補完
+   rawItemDefs = rawItemDefs.map(d => ({ unit: '本', packSize: 1, ...d }));
+ 
+   function saveRawItemDefs() {
+-    localStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
++    demoStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
+   }
+ 
+   function buildRawItems() {
+@@ -1882,11 +1891,11 @@
+ 
+   function rawStorageKey(dateStr) { return `yakitori_raw_${dateStr}`; }
+   function rawLoadDate(dateStr) {
+-    const r = localStorage.getItem(rawStorageKey(dateStr));
++    const r = demoStorage.getItem(rawStorageKey(dateStr));
+     return r ? JSON.parse(r) : null;
+   }
+   function rawSaveDate(dateStr, data) {
+-    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
++    demoStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
+   }
+   function rawGetCurrentData() {
+     const remaining = rawItems.map((_, i) => parseInt(document.getElementById(`rrem_${i}`)?.value) || 0);
+@@ -2090,7 +2099,7 @@
+       const d = new Date(dateStr + 'T00:00:00');
+       const wdIdx = d.getDay();
+       const isClosed = wdIdx === 0;
+-      const hasData = !!localStorage.getItem(rawStorageKey(dateStr));
++      const hasData = !!demoStorage.getItem(rawStorageKey(dateStr));
+       const isActive = dateStr === rawCurrentDate;
+       const isToday  = dateStr === today;
+       let cls = 'day-tab';
+@@ -2148,7 +2157,7 @@
+   }
+   function rawClearDay() {
+     if (!confirm(`${formatLabel(rawCurrentDate)} の原料データをリセットしますか？`)) return;
+-    localStorage.removeItem(rawStorageKey(rawCurrentDate));
++    demoStorage.removeItem(rawStorageKey(rawCurrentDate));
+     rawBuildDayTabs();
+     rawRenderTable();
+   }
+@@ -2205,20 +2214,134 @@
+         }
+       });
+ 
+-      const numbers = extractNumbers(text);
+-      renderOCRRows(numbers);
+-      document.getElementById('ocrStatus').textContent =
+-        numbers.length > 0
+-          ? '数字を確認して「この内容で入力」をタップしてください'
+-          : '数字を認識できませんでした。手動で入力してください';
++      const result = readSheet(text);
++      renderOCRRows(result.values);
++      document.getElementById('ocrStatus').textContent = ocrStatusText(result);
+     } catch (e) {
+       document.getElementById('ocrStatus').textContent = '読み取りに失敗しました。手動で入力してください';
+       renderOCRRows([]);
+     }
+   }
+ 
++  function ocrStatusText(result) {
++    if (result.fallback) {
++      return '品目名を読み取れなかったため、上から順に当てはめました。行がずれている場合があるので、全ての行を確認してください';
++    }
++    if (result.matched === 0) return '数字を認識できませんでした。手動で入力してください';
++    const rest = result.total - result.matched;
++    return rest > 0
++      ? `${result.total}品目中${result.matched}品目を読み取りました。残り${rest}品目は空欄です。手で入力してください`
++      : `${result.total}品目中${result.matched}品目を読み取りました。数字を確認して「この内容で入力」をタップしてください`;
++  }
++
++  // 全角・空白・絵文字を落として突き合わせやすくする
++  function normalizeOCRLine(s) {
++    return String(s == null ? '' : s).normalize('NFKC').replace(/[^\p{L}\p{N}]/gu, '');
++  }
++
++  function editDistance(a, b) {
++    const dp = [];
++    for (let j = 0; j <= b.length; j++) dp[j] = j;
++    for (let i = 1; i <= a.length; i++) {
++      let prev = dp[0];
++      dp[0] = i;
++      for (let j = 1; j <= b.length; j++) {
++        const cur = dp[j];
++        dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
++        prev = cur;
++      }
++    }
++    return dp[b.length];
++  }
++
++  // 品目名が行のどこに写っているかを返す。score 2=そのまま一致 / 1=1文字までの誤認識
++  function findName(name, line) {
++    if (!name || !line) return null;
++    const i = line.indexOf(name);
++    if (i !== -1) return { score: 2, end: i + name.length };
++    // 2文字以下の名前は他の品目に紛れ込みやすいので曖昧一致させない
++    if (name.length < 3) return null;
++    const lens = [name.length, name.length - 1, name.length + 1];
++    for (const len of lens) {
++      if (len < 1) continue;
++      for (let s = 0; s + len <= line.length; s++) {
++        const w = line.slice(s, s + len);
++        if (/\d/.test(w)) continue;  // 記入された数字を名前の一部と取り違えない
++        if (editDistance(name, w) <= 1) return { score: 1, end: s + len };
++      }
++    }
++    return null;
++  }
++
++  // 名前より後ろにある数字を拾う（用紙は名前の右が記入欄）
++  function pickNumber(line, from) {
++    const m = line.slice(from).match(/\d+/);
++    if (!m) return null;
++    const n = parseInt(m[0], 10);
++    return n <= 9999 ? n : null;
++  }
++
++  // 品目名を手がかりに残数を読む。名前が見つからない品目は空欄のまま（行ずれを起こさない）
++  function readSheet(text) {
++    const lines = String(text == null ? '' : text).split('\n').map(normalizeOCRLine);
++    const targets = [];
++    items.forEach((it, idx) => {
++      const name = normalizeOCRLine(it.name);
++      if (name) targets.push({ idx, name });
++    });
++
++    const cands = [];
++    targets.forEach(t => {
++      lines.forEach((line, li) => {
++        const hit = findName(t.name, line);
++        if (hit) cands.push({ idx: t.idx, li, score: hit.score, end: hit.end, len: t.name.length });
++      });
++    });
++    // 確かな一致から、長い名前を優先して割り当てる（「むね」が「とりむね」の行を取らないように）
++    cands.sort((a, b) => b.score - a.score || b.len - a.len);
++
++    const isNameLine = lines.map((line, li) => cands.some(c => c.li === li));
++    const values = items.map(() => null);
++    const doneItem = items.map(() => false);
++    const doneLine = lines.map(() => false);
++    let matched = 0;
++
++    cands.forEach(c => {
++      if (doneItem[c.idx] || doneLine[c.li]) return;
++      // 同じ行を同じ確からしさで複数の品目が取り合うときは、取り違えを避けて捨てる
++      const rival = cands.some(o => o.li === c.li && o.idx !== c.idx && o.score === c.score && o.len === c.len && !doneItem[o.idx]);
++      if (rival) { doneLine[c.li] = true; return; }
++      doneItem[c.idx] = true;
++      doneLine[c.li] = true;
++      let n = pickNumber(lines[c.li], c.end);
++      if (n === null) {
++        // 数字が次の行に落ちることがあるので、数字だけの行なら拾う
++        for (let j = c.li + 1; j < lines.length; j++) {
++          if (!lines[j]) continue;
++          if (doneLine[j] || isNameLine[j]) break;
++          if (/\d/.test(lines[j]) && lines[j].replace(/\d/g, '').length <= 1) {
++            n = pickNumber(lines[j], 0);
++            if (n !== null) doneLine[j] = true;
++          }
++          break;
++        }
++      }
++      if (n !== null) { values[c.idx] = n; matched++; }
++    });
++
++    if (matched === 0) {
++      // 品目名が1つも読めなかった時だけ、従来どおり上から順に当てはめる
++      const nums = extractNumbers(text);
++      if (nums.length > 0) {
++        nums.forEach((n, i) => { values[i] = n; });
++        return { values, matched: 0, total: targets.length, fallback: true };
++      }
++    }
++    return { values, matched, total: targets.length, fallback: false };
++  }
++
+   function extractNumbers(text) {
+-    // 行ごとに最初の数字を抽出
++    // 行ごとに最初の数字を抽出（品目名が全く読めなかった時の保険）
+     return text.split('\n')
+       .map(line => { const m = line.match(/\d+/); return m ? parseInt(m[0]) : null; })
+       .filter(n => n !== null && n >= 0 && n <= 9999)
+diff --git a/print.html b/print.html
+index e224b78..f78123d 100644
+--- a/print.html
++++ b/print.html
+@@ -129,19 +129,23 @@
+ <div class="sheet" id="sheet"></div>
+ 
+ <script>
++  // デモ版から来た場合（?demo=1）は demo_ 付きの保存キーを読む
++  const isDemo = new URLSearchParams(location.search).get('demo') === '1';
++  const LS_PREFIX = isDemo ? 'demo_' : '';
++
+   // アプリと同じ品目名を読み込む（未設定ならデフォルト）
+   const defaultBaseNames = ['ねぎま','むね','ぼんじり','せせり','ハツ','レバー','とり皮','砂肝','ささみ'];
+ 
+   function getItemNames() {
+     let base;
+     try {
+-      const raw = JSON.parse(localStorage.getItem('yakitori_base_item_defs') || 'null');
++      const raw = JSON.parse(localStorage.getItem(LS_PREFIX + 'yakitori_base_item_defs') || 'null');
+       base = raw && raw.length ? raw.map((d, i) => d.name || defaultBaseNames[i]) : defaultBaseNames.slice();
+     } catch (e) { base = defaultBaseNames.slice(); }
+ 
+     let custom = [];
+     try {
+-      const raw = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[]');
++      const raw = JSON.parse(localStorage.getItem(LS_PREFIX + 'yakitori_custom_items') || '[]');
+       custom = raw.map(d => (d.name || '').trim()).filter(n => n);
+     } catch (e) { custom = []; }
+ 
+@@ -171,10 +175,10 @@
+   const sheet = document.getElementById('sheet');
+   sheet.innerHTML = Array.from({ length: 9 }, () => buildForm(names)).join('');
+ 
+-  // デモから来た場合は「デモに戻る」に切り替え
++  // デモから来た場合は「デモに戻る」に切り替え（?demo=1 を優先。referrer は補助）
+   (function(){
+     var ref = document.referrer || '';
+-    if (ref.indexOf('demo.html') !== -1) {
++    if (isDemo || ref.indexOf('demo.html') !== -1) {
+       var a = document.getElementById('backToApp');
+       if (a) { a.setAttribute('href', './demo.html'); a.textContent = '← デモに戻る'; }
+     }
+diff --git a/v5.html b/v5.html
+index 5188b78..4525da8 100644
+--- a/v5.html
++++ b/v5.html
+@@ -943,6 +943,11 @@
+     <input type="text" id="accessCodeInput" placeholder="例: 7F3K-9QRT" style="width:100%;padding:12px;font-size:1.1rem;text-align:center;letter-spacing:2px;border-radius:8px;border:1px solid #555;background:#1a1a1a;color:#f0e6d3;outline:none;text-transform:uppercase;">
+     <button id="accessCodeBtn" onclick="submitAccessCode()" style="width:100%;margin-top:14px;padding:12px;font-size:1rem;font-weight:700;border:none;border-radius:8px;background:#f5c842;color:#1a1a1a;cursor:pointer;">確認</button>
+     <div id="accessCodeError" style="color:#e06060;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
++    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #3a3a3a;font-size:0.78rem;color:#aaa;">
++      <div style="margin-bottom:8px;">アクセスコードをお持ちでない方へ</div>
++      <a href="demo.html" style="display:block;color:#f5c842;text-decoration:none;padding:4px 0;">▶ 体験版を試す（コード不要）</a>
++      <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:block;color:#f5c842;text-decoration:none;padding:4px 0;">▶ 購入して本番版を使う</a>
++    </div>
+   </div>
+ </div>
+ 
+@@ -2210,20 +2215,134 @@
+         }
+       });
+ 
+-      const numbers = extractNumbers(text);
+-      renderOCRRows(numbers);
+-      document.getElementById('ocrStatus').textContent =
+-        numbers.length > 0
+-          ? '数字を確認して「この内容で入力」をタップしてください'
+-          : '数字を認識できませんでした。手動で入力してください';
++      const result = readSheet(text);
++      renderOCRRows(result.values);
++      document.getElementById('ocrStatus').textContent = ocrStatusText(result);
+     } catch (e) {
+       document.getElementById('ocrStatus').textContent = '読み取りに失敗しました。手動で入力してください';
+       renderOCRRows([]);
+     }
+   }
+ 
++  function ocrStatusText(result) {
++    if (result.fallback) {
++      return '品目名を読み取れなかったため、上から順に当てはめました。行がずれている場合があるので、全ての行を確認してください';
++    }
++    if (result.matched === 0) return '数字を認識できませんでした。手動で入力してください';
++    const rest = result.total - result.matched;
++    return rest > 0
++      ? `${result.total}品目中${result.matched}品目を読み取りました。残り${rest}品目は空欄です。手で入力してください`
++      : `${result.total}品目中${result.matched}品目を読み取りました。数字を確認して「この内容で入力」をタップしてください`;
++  }
++
++  // 全角・空白・絵文字を落として突き合わせやすくする
++  function normalizeOCRLine(s) {
++    return String(s == null ? '' : s).normalize('NFKC').replace(/[^\p{L}\p{N}]/gu, '');
++  }
++
++  function editDistance(a, b) {
++    const dp = [];
++    for (let j = 0; j <= b.length; j++) dp[j] = j;
++    for (let i = 1; i <= a.length; i++) {
++      let prev = dp[0];
++      dp[0] = i;
++      for (let j = 1; j <= b.length; j++) {
++        const cur = dp[j];
++        dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
++        prev = cur;
++      }
++    }
++    return dp[b.length];
++  }
++
++  // 品目名が行のどこに写っているかを返す。score 2=そのまま一致 / 1=1文字までの誤認識
++  function findName(name, line) {
++    if (!name || !line) return null;
++    const i = line.indexOf(name);
++    if (i !== -1) return { score: 2, end: i + name.length };
++    // 2文字以下の名前は他の品目に紛れ込みやすいので曖昧一致させない
++    if (name.length < 3) return null;
++    const lens = [name.length, name.length - 1, name.length + 1];
++    for (const len of lens) {
++      if (len < 1) continue;
++      for (let s = 0; s + len <= line.length; s++) {
++        const w = line.slice(s, s + len);
++        if (/\d/.test(w)) continue;  // 記入された数字を名前の一部と取り違えない
++        if (editDistance(name, w) <= 1) return { score: 1, end: s + len };
++      }
++    }
++    return null;
++  }
++
++  // 名前より後ろにある数字を拾う（用紙は名前の右が記入欄）
++  function pickNumber(line, from) {
++    const m = line.slice(from).match(/\d+/);
++    if (!m) return null;
++    const n = parseInt(m[0], 10);
++    return n <= 9999 ? n : null;
++  }
++
++  // 品目名を手がかりに残数を読む。名前が見つからない品目は空欄のまま（行ずれを起こさない）
++  function readSheet(text) {
++    const lines = String(text == null ? '' : text).split('\n').map(normalizeOCRLine);
++    const targets = [];
++    items.forEach((it, idx) => {
++      const name = normalizeOCRLine(it.name);
++      if (name) targets.push({ idx, name });
++    });
++
++    const cands = [];
++    targets.forEach(t => {
++      lines.forEach((line, li) => {
++        const hit = findName(t.name, line);
++        if (hit) cands.push({ idx: t.idx, li, score: hit.score, end: hit.end, len: t.name.length });
++      });
++    });
++    // 確かな一致から、長い名前を優先して割り当てる（「むね」が「とりむね」の行を取らないように）
++    cands.sort((a, b) => b.score - a.score || b.len - a.len);
++
++    const isNameLine = lines.map((line, li) => cands.some(c => c.li === li));
++    const values = items.map(() => null);
++    const doneItem = items.map(() => false);
++    const doneLine = lines.map(() => false);
++    let matched = 0;
++
++    cands.forEach(c => {
++      if (doneItem[c.idx] || doneLine[c.li]) return;
++      // 同じ行を同じ確からしさで複数の品目が取り合うときは、取り違えを避けて捨てる
++      const rival = cands.some(o => o.li === c.li && o.idx !== c.idx && o.score === c.score && o.len === c.len && !doneItem[o.idx]);
++      if (rival) { doneLine[c.li] = true; return; }
++      doneItem[c.idx] = true;
++      doneLine[c.li] = true;
++      let n = pickNumber(lines[c.li], c.end);
++      if (n === null) {
++        // 数字が次の行に落ちることがあるので、数字だけの行なら拾う
++        for (let j = c.li + 1; j < lines.length; j++) {
++          if (!lines[j]) continue;
++          if (doneLine[j] || isNameLine[j]) break;
++          if (/\d/.test(lines[j]) && lines[j].replace(/\d/g, '').length <= 1) {
++            n = pickNumber(lines[j], 0);
++            if (n !== null) doneLine[j] = true;
++          }
++          break;
++        }
++      }
++      if (n !== null) { values[c.idx] = n; matched++; }
++    });
++
++    if (matched === 0) {
++      // 品目名が1つも読めなかった時だけ、従来どおり上から順に当てはめる
++      const nums = extractNumbers(text);
++      if (nums.length > 0) {
++        nums.forEach((n, i) => { values[i] = n; });
++        return { values, matched: 0, total: targets.length, fallback: true };
++      }
++    }
++    return { values, matched, total: targets.length, fallback: false };
++  }
++
+   function extractNumbers(text) {
+-    // 行ごとに最初の数字を抽出
++    // 行ごとに最初の数字を抽出（品目名が全く読めなかった時の保険）
+     return text.split('\n')
+       .map(line => { const m = line.match(/\d+/); return m ? parseInt(m[0]) : null; })
+       .filter(n => n !== null && n >= 0 && n <= 9999)
+@@ -2275,15 +2394,39 @@
+ <script>
+   // ---- アクセスコード ゲート ----
+   const ACCESS_STORAGE_KEY = 'yakitori_access_code';
++  const ACCESS_VERIFIED_AT_KEY = 'yakitori_access_verified_at';
++  // サーバーに確認できない状態でも使える猶予期間（7日）
++  const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
++
++  function markVerified() {
++    localStorage.setItem(ACCESS_VERIFIED_AT_KEY, String(Date.now()));
++  }
++
++  // コードと確認時刻がずれないよう、消すときは必ず両方まとめて消す
++  function clearAccess() {
++    localStorage.removeItem(ACCESS_STORAGE_KEY);
++    localStorage.removeItem(ACCESS_VERIFIED_AT_KEY);
++  }
++
++  function isWithinOfflineGrace() {
++    const raw = localStorage.getItem(ACCESS_VERIFIED_AT_KEY);
++    if (!raw) return false;
++    const verifiedAt = Number(raw);
++    if (!Number.isFinite(verifiedAt) || verifiedAt <= 0) return false;
++    const elapsed = Date.now() - verifiedAt;
++    if (elapsed < 0) return false; // 端末の時計が進められている
++    return elapsed <= OFFLINE_GRACE_MS;
++  }
+ 
+   function showApp() {
+     document.getElementById('accessGate').style.display = 'none';
+     document.getElementById('appRoot').style.display = 'block';
+   }
+ 
+-  function showGate() {
++  function showGate(message) {
+     document.getElementById('appRoot').style.display = 'none';
+     document.getElementById('accessGate').style.display = 'flex';
++    document.getElementById('accessCodeError').textContent = message || '';
+     document.getElementById('accessCodeInput').focus();
+   }
+ 
+@@ -2305,15 +2448,18 @@
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ code }),
+       });
++      // サーバーエラーはコードが無効という意味ではないので、通信エラーとして扱う
++      if (!res.ok) throw new Error(`verify-code failed: ${res.status}`);
+       const data = await res.json();
+       if (data.valid) {
+         localStorage.setItem(ACCESS_STORAGE_KEY, code);
++        markVerified();
+         showApp();
+       } else {
+         errEl.textContent = 'コードが正しくありません。ご確認の上、再度入力してください。';
+       }
+     } catch (e) {
+-      errEl.textContent = '通信エラーが発生しました。時間をおいて再度お試しください。';
++      errEl.textContent = 'コードを確認できませんでした。通信状態をご確認の上、時間をおいて再度お試しください。';
+     } finally {
+       btn.disabled = false;
+       btn.textContent = '確認';
+@@ -2334,12 +2480,21 @@
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ code: saved }),
+       });
++      // サーバーエラーはコードが無効という意味ではないので、猶予期間の判定へ回す
++      if (!res.ok) throw new Error(`verify-code failed: ${res.status}`);
+       const data = await res.json();
+-      if (data.valid) showApp();
+-      else { localStorage.removeItem(ACCESS_STORAGE_KEY); showGate(); }
++      if (data.valid) {
++        markVerified();
++        showApp();
++      } else {
++        clearAccess();
++        showGate();
++      }
+     } catch (e) {
+-      // オフライン等で確認できない場合は、以前有効だったコードなのでそのまま使わせる
+-      showApp();
++      // サーバーに確認できないときだけ猶予期間で判定する。
++      // ここで確認時刻を更新すると猶予が無限に延びてしまうので、更新しない。
++      if (isWithinOfflineGrace()) showApp();
++      else showGate('アクセスコードの再確認が必要です。インターネットに接続した状態で、もう一度コードを入力してください。');
+     }
+   })();
+ </script>
+-- 
+2.43.0
+
