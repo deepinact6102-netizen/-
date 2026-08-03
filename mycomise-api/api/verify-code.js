@@ -6,7 +6,9 @@ import { getRedis } from '../lib/redis.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ valid: false, error: 'Method Not Allowed' });
+    // source は「本番がどのリポジトリから動いているか」を確認するための目印。
+    // アプリは POST しか使わないため、この応答が返るのはブラウザで直接開いたときだけ。
+    return res.status(405).json({ valid: false, error: 'Method Not Allowed', source: 'repo:-' });
   }
 
   const { code } = req.body || {};
