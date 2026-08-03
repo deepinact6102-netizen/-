@@ -1,0 +1,240 @@
+diff --git a/demo.html b/demo.html
+index b96ddc3..22ecfae 100644
+--- a/demo.html
++++ b/demo.html
+@@ -938,7 +938,8 @@
+ <!-- デモ版バナー -->
+ <div style="background:#e07020;color:#fff;text-align:center;padding:8px 12px;font-size:0.85rem;font-weight:700;line-height:1.5;">
+   🍢 これはデモ版です（無料でお試しいただけます）<br>
+-  <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:inline-block;margin-top:6px;background:#fff;color:#e07020;text-decoration:none;padding:5px 16px;border-radius:6px;font-size:0.82rem;">▶ 購入して本番版を使う</a>
++  <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:inline-block;margin-top:6px;background:#fff;color:#e07020;text-decoration:none;padding:5px 16px;border-radius:6px;font-size:0.82rem;">▶ 購入して本番版を使う</a><br>
++  <a href="./v5.html" style="display:inline-block;margin-top:6px;color:#ffe8d5;text-decoration:underline;font-size:0.75rem;font-weight:400;">本番版をお持ちの方はこちら</a>
+ </div>
+ 
+ <div id="appRoot" style="display:block;">
+@@ -948,7 +949,7 @@
+   <button id="themeToggleBtn" onclick="toggleTheme()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:4px 8px;">🌙</button>
+ </div>
+ <a class="manual-link" href="./manual.html">📖 取扱説明書を見る</a>
+-<a class="manual-link" href="./print.html">🖨️ 焼き鳥 記録用紙を印刷</a>
++<a class="manual-link" href="./print.html?demo=1">🖨️ 焼き鳥 記録用紙を印刷</a>
+ 
+ <!-- 店舗名 -->
+ <div class="store-name-bar">
+@@ -1164,9 +1165,17 @@
+ <div class="toast" id="toast">保存しました</div>
+ 
+ <script>
++  // デモ版は本番アプリと同じオリジンで動くため、保存キーを demo_ で分離する
++  const LS_PREFIX = 'demo_';
++  const demoStorage = {
++    getItem(key)        { return localStorage.getItem(LS_PREFIX + key); },
++    setItem(key, value) { localStorage.setItem(LS_PREFIX + key, value); },
++    removeItem(key)     { localStorage.removeItem(LS_PREFIX + key); },
++  };
++
+   // テーマ初期化（関数定義より先に実行するため body クラスだけ先に設定）
+   (function(){
+-    const t = localStorage.getItem('yakitori_theme');
++    const t = demoStorage.getItem('yakitori_theme');
+     if(t === 'light') document.body.classList.add('light');
+   })();
+ 
+@@ -1179,16 +1188,16 @@
+ 
+   function toggleTheme() {
+     document.body.classList.toggle('light');
+-    localStorage.setItem('yakitori_theme', document.body.classList.contains('light') ? 'light' : 'dark');
++    demoStorage.setItem('yakitori_theme', document.body.classList.contains('light') ? 'light' : 'dark');
+     updateThemeBtn();
+   }
+ 
+   // カスタム品目（名称・目安を自由記入）
+-  let customItemDefs = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
++  let customItemDefs = JSON.parse(demoStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
+   customItemDefs = customItemDefs.map(d => ({ course: false, ...d }));
+ 
+   function saveCustomItemDefs() {
+-    localStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
++    demoStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
+   }
+ 
+   // 全品目の名称・目安を編集可能にする（デフォルト値あり）
+@@ -1204,13 +1213,13 @@
+     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
+   ];
+ 
+-  let baseItemDefs = JSON.parse(localStorage.getItem('yakitori_base_item_defs') ||
++  let baseItemDefs = JSON.parse(demoStorage.getItem('yakitori_base_item_defs') ||
+     JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target, course: it.course }))));
+   // 既存データに course が無い場合は defaultBaseItems の値で補完
+   baseItemDefs = baseItemDefs.map((d, i) => ({ course: defaultBaseItems[i].course, ...d }));
+ 
+   function saveBaseItemDefs() {
+-    localStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
++    demoStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
+   }
+ 
+   const baseItems = defaultBaseItems; // 固定プロパティ（icon, course, fixedDeliveryPerDay）用
+@@ -1295,12 +1304,12 @@
+   function storageKey(dateStr) { return `yakitori_${dateStr}`; }
+ 
+   function loadDate(dateStr) {
+-    const raw = localStorage.getItem(storageKey(dateStr));
++    const raw = demoStorage.getItem(storageKey(dateStr));
+     return raw ? JSON.parse(raw) : null;
+   }
+ 
+   function saveDate(dateStr, data) {
+-    localStorage.setItem(storageKey(dateStr), JSON.stringify(data));
++    demoStorage.setItem(storageKey(dateStr), JSON.stringify(data));
+   }
+ 
+   function getCurrentData() {
+@@ -1378,7 +1387,7 @@
+       const mm = d.getMonth() + 1;
+       const dd = d.getDate();
+ 
+-      const hasData = !!localStorage.getItem(storageKey(dateStr));
++      const hasData = !!demoStorage.getItem(storageKey(dateStr));
+       const isActive = dateStr === currentDate;
+       const isToday  = dateStr === today;
+ 
+@@ -1570,14 +1579,14 @@
+ 
+   function clearDay() {
+     if (!confirm(`${formatLabel(currentDate)} のデータをリセットしますか？`)) return;
+-    localStorage.removeItem(storageKey(currentDate));
++    demoStorage.removeItem(storageKey(currentDate));
+     buildDayTabs();
+     renderTable();
+   }
+ 
+   // ---- 店舗名 ----
+   function loadStoreName() {
+-    const name = localStorage.getItem('yakitori_store_name') || '';
++    const name = demoStorage.getItem('yakitori_store_name') || '';
+     const disp = document.getElementById('storeNameDisplay');
+     if (name) {
+       disp.textContent = name;
+@@ -1588,7 +1597,7 @@
+     }
+   }
+   function startEditStoreName() {
+-    const name = localStorage.getItem('yakitori_store_name') || '';
++    const name = demoStorage.getItem('yakitori_store_name') || '';
+     const input = document.getElementById('storeNameInput');
+     input.value = name;
+     document.getElementById('storeNameDisplay').style.display = 'none';
+@@ -1597,7 +1606,7 @@
+   }
+   function saveStoreName() {
+     const val = document.getElementById('storeNameInput').value.trim();
+-    localStorage.setItem('yakitori_store_name', val);
++    demoStorage.setItem('yakitori_store_name', val);
+     document.getElementById('storeNameInput').style.display = 'none';
+     document.getElementById('storeNameDisplay').style.display = '';
+     loadStoreName();
+@@ -1634,9 +1643,9 @@
+   // ---- カレンダー ----
+   // planData[dateStr] = { orderDays: 0|1|2|3, storeHoliday: bool, supplierHoliday: bool }
+   // orderDays: 0=発注なし, 1=1日分(デフォルト), 2=2日分, 3=3日分
+-  let planData = JSON.parse(localStorage.getItem('yakitori_cal_plan') || '{}');
++  let planData = JSON.parse(demoStorage.getItem('yakitori_cal_plan') || '{}');
+   function savePlanData() {
+-    localStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
++    demoStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
+   }
+   function getPlan(dateStr) {
+     return planData[dateStr] || { orderDays: 1, storeHoliday: false, supplierHoliday: false };
+@@ -1863,13 +1872,13 @@
+   }
+ 
+   // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
+-  let rawItemDefs = JSON.parse(localStorage.getItem('yakitori_raw_item_defs') ||
++  let rawItemDefs = JSON.parse(demoStorage.getItem('yakitori_raw_item_defs') ||
+     JSON.stringify(Array.from({length:10}, () => ({name:'', target:10, unit:'本'}))));
+   // 既存データにunit/packSizeが無い場合は補完
+   rawItemDefs = rawItemDefs.map(d => ({ unit: '本', packSize: 1, ...d }));
+ 
+   function saveRawItemDefs() {
+-    localStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
++    demoStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
+   }
+ 
+   function buildRawItems() {
+@@ -1882,11 +1891,11 @@
+ 
+   function rawStorageKey(dateStr) { return `yakitori_raw_${dateStr}`; }
+   function rawLoadDate(dateStr) {
+-    const r = localStorage.getItem(rawStorageKey(dateStr));
++    const r = demoStorage.getItem(rawStorageKey(dateStr));
+     return r ? JSON.parse(r) : null;
+   }
+   function rawSaveDate(dateStr, data) {
+-    localStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
++    demoStorage.setItem(rawStorageKey(dateStr), JSON.stringify(data));
+   }
+   function rawGetCurrentData() {
+     const remaining = rawItems.map((_, i) => parseInt(document.getElementById(`rrem_${i}`)?.value) || 0);
+@@ -2090,7 +2099,7 @@
+       const d = new Date(dateStr + 'T00:00:00');
+       const wdIdx = d.getDay();
+       const isClosed = wdIdx === 0;
+-      const hasData = !!localStorage.getItem(rawStorageKey(dateStr));
++      const hasData = !!demoStorage.getItem(rawStorageKey(dateStr));
+       const isActive = dateStr === rawCurrentDate;
+       const isToday  = dateStr === today;
+       let cls = 'day-tab';
+@@ -2148,7 +2157,7 @@
+   }
+   function rawClearDay() {
+     if (!confirm(`${formatLabel(rawCurrentDate)} の原料データをリセットしますか？`)) return;
+-    localStorage.removeItem(rawStorageKey(rawCurrentDate));
++    demoStorage.removeItem(rawStorageKey(rawCurrentDate));
+     rawBuildDayTabs();
+     rawRenderTable();
+   }
+diff --git a/print.html b/print.html
+index e224b78..f78123d 100644
+--- a/print.html
++++ b/print.html
+@@ -129,19 +129,23 @@
+ <div class="sheet" id="sheet"></div>
+ 
+ <script>
++  // デモ版から来た場合（?demo=1）は demo_ 付きの保存キーを読む
++  const isDemo = new URLSearchParams(location.search).get('demo') === '1';
++  const LS_PREFIX = isDemo ? 'demo_' : '';
++
+   // アプリと同じ品目名を読み込む（未設定ならデフォルト）
+   const defaultBaseNames = ['ねぎま','むね','ぼんじり','せせり','ハツ','レバー','とり皮','砂肝','ささみ'];
+ 
+   function getItemNames() {
+     let base;
+     try {
+-      const raw = JSON.parse(localStorage.getItem('yakitori_base_item_defs') || 'null');
++      const raw = JSON.parse(localStorage.getItem(LS_PREFIX + 'yakitori_base_item_defs') || 'null');
+       base = raw && raw.length ? raw.map((d, i) => d.name || defaultBaseNames[i]) : defaultBaseNames.slice();
+     } catch (e) { base = defaultBaseNames.slice(); }
+ 
+     let custom = [];
+     try {
+-      const raw = JSON.parse(localStorage.getItem('yakitori_custom_items') || '[]');
++      const raw = JSON.parse(localStorage.getItem(LS_PREFIX + 'yakitori_custom_items') || '[]');
+       custom = raw.map(d => (d.name || '').trim()).filter(n => n);
+     } catch (e) { custom = []; }
+ 
+@@ -171,10 +175,10 @@
+   const sheet = document.getElementById('sheet');
+   sheet.innerHTML = Array.from({ length: 9 }, () => buildForm(names)).join('');
+ 
+-  // デモから来た場合は「デモに戻る」に切り替え
++  // デモから来た場合は「デモに戻る」に切り替え（?demo=1 を優先。referrer は補助）
+   (function(){
+     var ref = document.referrer || '';
+-    if (ref.indexOf('demo.html') !== -1) {
++    if (isDemo || ref.indexOf('demo.html') !== -1) {
+       var a = document.getElementById('backToApp');
+       if (a) { a.setAttribute('href', './demo.html'); a.textContent = '← デモに戻る'; }
+     }

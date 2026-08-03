@@ -1,0 +1,16 @@
+diff --git a/v5.html b/v5.html
+index 5188b78..1b1413f 100644
+--- a/v5.html
++++ b/v5.html
+@@ -943,6 +943,11 @@
+     <input type="text" id="accessCodeInput" placeholder="例: 7F3K-9QRT" style="width:100%;padding:12px;font-size:1.1rem;text-align:center;letter-spacing:2px;border-radius:8px;border:1px solid #555;background:#1a1a1a;color:#f0e6d3;outline:none;text-transform:uppercase;">
+     <button id="accessCodeBtn" onclick="submitAccessCode()" style="width:100%;margin-top:14px;padding:12px;font-size:1rem;font-weight:700;border:none;border-radius:8px;background:#f5c842;color:#1a1a1a;cursor:pointer;">確認</button>
+     <div id="accessCodeError" style="color:#e06060;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
++    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #3a3a3a;font-size:0.78rem;color:#aaa;">
++      <div style="margin-bottom:8px;">アクセスコードをお持ちでない方へ</div>
++      <a href="demo.html" style="display:block;color:#f5c842;text-decoration:none;padding:4px 0;">▶ 体験版を試す（コード不要）</a>
++      <a href="https://buy.stripe.com/9B6cN45Q7aGg51B1ZecAo00" style="display:block;color:#f5c842;text-decoration:none;padding:4px 0;">▶ 購入して本番版を使う</a>
++    </div>
+   </div>
+ </div>
+ 

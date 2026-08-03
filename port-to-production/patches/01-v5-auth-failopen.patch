@@ -1,0 +1,91 @@
+diff --git a/v5.html b/v5.html
+index 5188b78..1b1413f 100644
+--- a/v5.html
++++ b/v5.html
+@@ -2275,15 +2280,39 @@
+ <script>
+   // ---- アクセスコード ゲート ----
+   const ACCESS_STORAGE_KEY = 'yakitori_access_code';
++  const ACCESS_VERIFIED_AT_KEY = 'yakitori_access_verified_at';
++  // サーバーに確認できない状態でも使える猶予期間（7日）
++  const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
++
++  function markVerified() {
++    localStorage.setItem(ACCESS_VERIFIED_AT_KEY, String(Date.now()));
++  }
++
++  // コードと確認時刻がずれないよう、消すときは必ず両方まとめて消す
++  function clearAccess() {
++    localStorage.removeItem(ACCESS_STORAGE_KEY);
++    localStorage.removeItem(ACCESS_VERIFIED_AT_KEY);
++  }
++
++  function isWithinOfflineGrace() {
++    const raw = localStorage.getItem(ACCESS_VERIFIED_AT_KEY);
++    if (!raw) return false;
++    const verifiedAt = Number(raw);
++    if (!Number.isFinite(verifiedAt) || verifiedAt <= 0) return false;
++    const elapsed = Date.now() - verifiedAt;
++    if (elapsed < 0) return false; // 端末の時計が進められている
++    return elapsed <= OFFLINE_GRACE_MS;
++  }
+ 
+   function showApp() {
+     document.getElementById('accessGate').style.display = 'none';
+     document.getElementById('appRoot').style.display = 'block';
+   }
+ 
+-  function showGate() {
++  function showGate(message) {
+     document.getElementById('appRoot').style.display = 'none';
+     document.getElementById('accessGate').style.display = 'flex';
++    document.getElementById('accessCodeError').textContent = message || '';
+     document.getElementById('accessCodeInput').focus();
+   }
+ 
+@@ -2305,15 +2334,18 @@
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ code }),
+       });
++      // サーバーエラーはコードが無効という意味ではないので、通信エラーとして扱う
++      if (!res.ok) throw new Error(`verify-code failed: ${res.status}`);
+       const data = await res.json();
+       if (data.valid) {
+         localStorage.setItem(ACCESS_STORAGE_KEY, code);
++        markVerified();
+         showApp();
+       } else {
+         errEl.textContent = 'コードが正しくありません。ご確認の上、再度入力してください。';
+       }
+     } catch (e) {
+-      errEl.textContent = '通信エラーが発生しました。時間をおいて再度お試しください。';
++      errEl.textContent = 'コードを確認できませんでした。通信状態をご確認の上、時間をおいて再度お試しください。';
+     } finally {
+       btn.disabled = false;
+       btn.textContent = '確認';
+@@ -2334,12 +2366,21 @@
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ code: saved }),
+       });
++      // サーバーエラーはコードが無効という意味ではないので、猶予期間の判定へ回す
++      if (!res.ok) throw new Error(`verify-code failed: ${res.status}`);
+       const data = await res.json();
+-      if (data.valid) showApp();
+-      else { localStorage.removeItem(ACCESS_STORAGE_KEY); showGate(); }
++      if (data.valid) {
++        markVerified();
++        showApp();
++      } else {
++        clearAccess();
++        showGate();
++      }
+     } catch (e) {
+-      // オフライン等で確認できない場合は、以前有効だったコードなのでそのまま使わせる
+-      showApp();
++      // サーバーに確認できないときだけ猶予期間で判定する。
++      // ここで確認時刻を更新すると猶予が無限に延びてしまうので、更新しない。
++      if (isWithinOfflineGrace()) showApp();
++      else showGate('アクセスコードの再確認が必要です。インターネットに接続した状態で、もう一度コードを入力してください。');
+     }
+   })();
+ </script>
