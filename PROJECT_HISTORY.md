@@ -179,7 +179,12 @@ PWA 化で Service Worker のキャッシュを導入したが、更新が反映
    `-`（`deepinact6102-netizen`）を持つセッションからは `mycomise/mycomise-1p` を追加できない。
    **本番を触るときは `mycomise/mycomise-1p` を最初のソースにした新しいセッションを立てること。**
 
-2. **2026-08-01〜02 の修正5件が本番へ未反映。** 移植内容は次節を参照。
+2. ~~**2026-08-01〜02 の修正5件が本番へ未反映。**~~
+   → **2026-08-03 に本番（`mycomise/mycomise-1p` の `main`）へ移植完了・デプロイ確認済み。**
+   移植は `claude/port-5-fixes-to-main-w2unym` ブランチの
+   `port-to-production/0001-port-five-fixes-to-production.patch` で実施。
+   ブラウザからの実地確認: `/api/stripe-webhook` が応答する（404 でなくなった）、
+   `v5.html` のゲートに導線2本が表示される、購入リンクが有効。
 
 3. **本番の webhook ファイル名にハイフンの取り違えがあった（2026-08-03 判明）。**
 
