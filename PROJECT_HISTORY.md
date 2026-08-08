@@ -186,6 +186,23 @@ PWA 化で Service Worker のキャッシュを導入したが、更新が反映
    ブラウザからの実地確認: `/api/stripe-webhook` が応答する（404 でなくなった）、
    `v5.html` のゲートに導線2本が表示される、購入リンクが有効。
 
+### ✅ 2026-08-03: 決済フローの通しテストに初めて成功
+
+**購入 → コード発行 → メール送信 → ログイン → 即時解約 → コード失効**
+の全工程が、実地で確認できた。**この製品が「売れる状態」になったのはこの日が初めて。**
+
+確認できた事項:
+- Stripe のリッスン対象は4件（`checkout.session.completed` / `customer.subscription.deleted` /
+  `customer.subscription.updated` / `invoice.payment_failed`）
+- Vercel に `RESEND_API_KEY` / `MAIL_FROM` が存在
+- webhook エンドポイントは `https://www.mycomise.com/api/stripe-webhook`。
+  **www 有り・無しのどちらでも応答する**（404 ではない）
+- 解約時にアクセスコードが失効し、ゲート画面に戻ることを確認
+
+**運用上の注意: 解約は手作業。** アプリ内では `mycomise@gmail.com` への連絡を案内しており、
+オーナーが Stripe の管理画面で解約する運用。顧客数が増えたら Stripe のカスタマーポータル
+（設定は作成済み・ログインリンクは未取得）への移行を検討すること。
+
 3. **本番の webhook ファイル名にハイフンの取り違えがあった（2026-08-03 判明）。**
 
    ```
