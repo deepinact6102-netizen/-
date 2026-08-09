@@ -221,9 +221,11 @@
 
 <a class="app-link" id="backToApp" href="./v5.html">▶ アプリを開く</a>
 <script>
+  // デモから来た場合は「デモに戻る」に切り替え（?demo=1 を優先。referrer は補助）
   (function(){
+    var isDemo = new URLSearchParams(location.search).get('demo') === '1';
     var ref = document.referrer || '';
-    if (ref.indexOf('demo.html') !== -1) {
+    if (isDemo || ref.indexOf('demo.html') !== -1) {
       var a = document.getElementById('backToApp');
       if (a) { a.setAttribute('href', './demo.html'); a.textContent = '▶ デモに戻る'; }
     }
