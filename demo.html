@@ -1137,6 +1137,20 @@
   </div>
 </div><!-- /page-cal -->
 
+<!-- データのバックアップ（ページ共通・一番下） -->
+<div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);">
+  <div style="font-size:0.85rem;font-weight:700;color:var(--accent-text);margin-bottom:6px;">💾 データのバックアップ</div>
+  <div class="footer-note" style="margin-top:0;margin-bottom:8px;">
+    ※ 発注データ・設定はこの端末の中だけに保存されています。機種変更や履歴の消去で消えてしまうので、ときどきファイルに保存してください
+  </div>
+  <button class="btn btn-save" style="width:100%;padding:12px;font-size:0.85rem;" onclick="exportBackup()">💾 データを保存（バックアップ）</button>
+  <button class="btn btn-reset" style="width:100%;padding:10px;font-size:0.78rem;margin-top:14px;color:#e06060;border-color:#e06060;" onclick="startImportBackup()">⚠️ バックアップから復元</button>
+  <div class="footer-note" style="margin-top:6px;">
+    ※ 復元すると、いまこの端末にある発注データ・設定はすべて消えて、ファイルの内容に置きかわります
+  </div>
+  <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFile(this)">
+</div>
+
 <!-- 日程設定ボトムシート -->
 <div class="cal-sheet" id="calSheet" onclick="closeCalSheet(event)">
   <div class="cal-sheet-box" onclick="event.stopPropagation()">
@@ -1193,8 +1207,11 @@
   }
 
   // カスタム品目（名称・目安を自由記入）
-  let customItemDefs = JSON.parse(demoStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]');
-  customItemDefs = customItemDefs.map(d => ({ course: false, ...d }));
+  function loadCustomItemDefs() {
+    return JSON.parse(demoStorage.getItem('yakitori_custom_items') || '[{"name":"","target":15,"course":false},{"name":"","target":15,"course":false}]')
+      .map(d => ({ course: false, ...d }));
+  }
+  let customItemDefs = loadCustomItemDefs();
 
   function saveCustomItemDefs() {
     demoStorage.setItem('yakitori_custom_items', JSON.stringify(customItemDefs));
@@ -1213,10 +1230,13 @@
     { name: 'ささみ',   icon: '🍢', target: 30, course: true  },
   ];
 
-  let baseItemDefs = JSON.parse(demoStorage.getItem('yakitori_base_item_defs') ||
-    JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target, course: it.course }))));
-  // 既存データに course が無い場合は defaultBaseItems の値で補完
-  baseItemDefs = baseItemDefs.map((d, i) => ({ course: defaultBaseItems[i].course, ...d }));
+  function loadBaseItemDefs() {
+    // 既存データに course が無い場合は defaultBaseItems の値で補完
+    return JSON.parse(demoStorage.getItem('yakitori_base_item_defs') ||
+      JSON.stringify(defaultBaseItems.map(it => ({ name: it.name, target: it.target, course: it.course }))))
+      .map((d, i) => ({ course: defaultBaseItems[i].course, ...d }));
+  }
+  let baseItemDefs = loadBaseItemDefs();
 
   function saveBaseItemDefs() {
     demoStorage.setItem('yakitori_base_item_defs', JSON.stringify(baseItemDefs));
@@ -1643,7 +1663,10 @@
   // ---- カレンダー ----
   // planData[dateStr] = { orderDays: 0|1|2|3, storeHoliday: bool, supplierHoliday: bool }
   // orderDays: 0=発注なし, 1=1日分(デフォルト), 2=2日分, 3=3日分
-  let planData = JSON.parse(demoStorage.getItem('yakitori_cal_plan') || '{}');
+  function loadPlanData() {
+    return JSON.parse(demoStorage.getItem('yakitori_cal_plan') || '{}');
+  }
+  let planData = loadPlanData();
   function savePlanData() {
     demoStorage.setItem('yakitori_cal_plan', JSON.stringify(planData));
   }
@@ -1872,10 +1895,13 @@
   }
 
   // ---- 原料発注ページ（1ページ目と同仕様・10品目） ----
-  let rawItemDefs = JSON.parse(demoStorage.getItem('yakitori_raw_item_defs') ||
-    JSON.stringify(Array.from({length:10}, () => ({name:'', target:10, unit:'本'}))));
-  // 既存データにunit/packSizeが無い場合は補完
-  rawItemDefs = rawItemDefs.map(d => ({ unit: '本', packSize: 1, ...d }));
+  function loadRawItemDefs() {
+    // 既存データにunit/packSizeが無い場合は補完
+    return JSON.parse(demoStorage.getItem('yakitori_raw_item_defs') ||
+      JSON.stringify(Array.from({length:10}, () => ({name:'', target:10, unit:'本'}))))
+      .map(d => ({ unit: '本', packSize: 1, ...d }));
+  }
+  let rawItemDefs = loadRawItemDefs();
 
   function saveRawItemDefs() {
     demoStorage.setItem('yakitori_raw_item_defs', JSON.stringify(rawItemDefs));
@@ -2160,6 +2186,188 @@
     demoStorage.removeItem(rawStorageKey(rawCurrentDate));
     rawBuildDayTabs();
     rawRenderTable();
+  }
+
+  // ---- バックアップ（ファイルに書き出し／ファイルから復元）----
+  // データはこの端末の localStorage にしか無い。機種変更や履歴の消去で丸ごと消えるので持ち出せるようにする
+  const BACKUP_FORMAT     = 'mycomise-yakitori-backup';
+  const BACKUP_VERSION    = 1;
+  const BACKUP_APP        = 'demo';
+  const BACKUP_KEY_PREFIX = LS_PREFIX;   // デモ版は 'demo_'（本番版は接頭辞なし）
+  const BACKUP_APP_LABELS = { v5: '本番版', demo: 'デモ版' };
+  const BACKUP_SETTING_LABELS = {
+    yakitori_store_name:     '店舗名',
+    yakitori_base_item_defs: '焼き鳥の品目設定',
+    yakitori_custom_items:   '追加品目の設定',
+    yakitori_raw_item_defs:  '原料の品目設定',
+    yakitori_cal_plan:       'カレンダーの予定',
+    yakitori_theme:          '画面の色',
+  };
+  const BACKUP_SETTING_KEYS = Object.keys(BACKUP_SETTING_LABELS);
+  // アクセスコード（yakitori_access_code / yakitori_access_verified_at）は入れない。
+  // バックアップファイルはメールなどで持ち回るので、入れると鍵ごと配ることになる
+  const RE_BACKUP_DAY_KEY     = /^yakitori_\d{4}-\d{2}-\d{2}$/;
+  const RE_BACKUP_RAW_DAY_KEY = /^yakitori_raw_\d{4}-\d{2}-\d{2}$/;
+
+  // 書き出し・復元してよいキーか。日付キーは際限なく増えるので正規表現で判定する
+  function isBackupKey(key) {
+    return BACKUP_SETTING_KEYS.includes(key) || RE_BACKUP_DAY_KEY.test(key) || RE_BACKUP_RAW_DAY_KEY.test(key);
+  }
+
+  // localStorage を総なめして自分の名前空間のキーだけ集める（決め打ちだと過去の日付を取りこぼす）
+  function collectBackupKeys() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const full = localStorage.key(i);
+      if (full === null || !full.startsWith(BACKUP_KEY_PREFIX)) continue;
+      const key = full.slice(BACKUP_KEY_PREFIX.length);
+      if (isBackupKey(key)) keys.push(key);
+    }
+    return keys.sort();
+  }
+
+  function buildBackupPayload() {
+    const data = {};
+    collectBackupKeys().forEach(key => {
+      const value = demoStorage.getItem(key);
+      if (value !== null) data[key] = value;   // 保存されている文字列のまま入れる（往復で変質させない）
+    });
+    return {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      app: BACKUP_APP,
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+  }
+
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify(buildBackupPayload(), null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `yakitori_backup_${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    showToast('バックアップを保存しました');
+  }
+
+  function startImportBackup() {
+    const input = document.getElementById('backupFileInput');
+    input.value = '';
+    input.click();
+  }
+
+  function handleBackupFile(input) {
+    const file = input.files && input.files[0];
+    input.value = '';   // 同じファイルを選び直せるようにする
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload  = () => {
+      try {
+        importBackup(String(reader.result));
+      } catch (e) {
+        alert(`復元できませんでした。\n\n${e.message}`);
+      }
+    };
+    reader.onerror = () => alert('復元できませんでした。\n\nファイルを読み込めませんでした。');
+    reader.readAsText(file);
+  }
+
+  function describeBackupDays(keys, prefix) {
+    if (!keys.length) return 'なし';
+    const dates = keys.map(k => k.slice(prefix.length)).sort();
+    return `${dates.length}日分（${dates[0]} 〜 ${dates[dates.length - 1]}）`;
+  }
+
+  function formatBackupTime(value) {
+    const d = new Date(typeof value === 'string' ? value : NaN);
+    if (isNaN(d.getTime())) return '不明';
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  // 途中まで書き込んで壊すことがないよう、先に全部を検証してから一気に置きかえる
+  function importBackup(text) {
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (e) {
+      throw new Error('選ばれたファイルを読み取れませんでした。このアプリで書き出したバックアップファイル（.json）を選んでください。');
+    }
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload) || payload.format !== BACKUP_FORMAT) {
+      throw new Error('このファイルは、このアプリのバックアップファイルではありません。');
+    }
+    if (typeof payload.version !== 'number' || payload.version !== BACKUP_VERSION) {
+      throw new Error(`このバックアップファイルの形式（${String(payload.version)}）には対応していません。アプリを新しい版に更新してからお試しください。`);
+    }
+    const data = payload.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('バックアップファイルの中身が壊れています（データが入っていません）。');
+    }
+    const keys = Object.keys(data);
+    keys.forEach(key => {
+      if (!isBackupKey(key)) {
+        throw new Error(`バックアップファイルに、このアプリのものではない項目「${key}」が入っています。安全のため復元を中止しました。`);
+      }
+      if (typeof data[key] !== 'string') {
+        throw new Error(`バックアップファイルの「${key}」が壊れています。安全のため復元を中止しました。`);
+      }
+    });
+
+    // 何が入っていて何が消えるのかを具体的に見せてから確認する（消えたら戻せない）
+    const dayKeys    = keys.filter(k => RE_BACKUP_DAY_KEY.test(k));
+    const rawDayKeys = keys.filter(k => RE_BACKUP_RAW_DAY_KEY.test(k));
+    const settings   = BACKUP_SETTING_KEYS.filter(k => keys.includes(k)).map(k => BACKUP_SETTING_LABELS[k]);
+    const lines = ['バックアップファイルから復元します。', ''];
+    lines.push(`書き出した日時: ${formatBackupTime(payload.exportedAt)}`);
+    if (typeof payload.app === 'string' && payload.app !== BACKUP_APP) {
+      lines.push(`※ ${BACKUP_APP_LABELS[payload.app] || payload.app}で書き出されたファイルです`);
+    }
+    lines.push(`焼き鳥の発注データ: ${describeBackupDays(dayKeys, 'yakitori_')}`);
+    lines.push(`原料の発注データ: ${describeBackupDays(rawDayKeys, 'yakitori_raw_')}`);
+    lines.push(`設定: ${settings.length ? settings.join('・') : 'なし'}`);
+    lines.push('');
+    lines.push('いまこの端末にある発注データ・設定はすべて消えて、ファイルの内容に置きかわります。');
+    lines.push('元に戻すことはできません。復元してよろしいですか？');
+    if (!confirm(lines.join('\n'))) return;
+
+    // 「置きかえ」なので今のデータを消してから書き込む（アクセスコードは対象外なので触れない）
+    collectBackupKeys().forEach(key => demoStorage.removeItem(key));
+    keys.forEach(key => demoStorage.setItem(key, data[key]));
+
+    reloadFromStorage();
+    alert(`復元しました。\n\n焼き鳥 ${dayKeys.length}日分 / 原料 ${rawDayKeys.length}日分 のデータを読み込みました。`);
+  }
+
+  // 復元した内容を画面に出す。設定はメモリにも持っているので読み直してから描き直す
+  function reloadFromStorage() {
+    document.body.classList.toggle('light', demoStorage.getItem('yakitori_theme') === 'light');
+    updateThemeBtn();
+    baseItemDefs   = loadBaseItemDefs();
+    customItemDefs = loadCustomItemDefs();
+    items          = buildItems();
+    rawItemDefs    = loadRawItemDefs();
+    rawItems       = buildRawItems();
+    planData       = loadPlanData();
+    loadStoreName();
+    buildDayTabs();
+    renderTable();
+    rawBuildDayTabs();
+    rawRenderTable();
+    renderCal(calYear, calMonth, 'calGrid', 'calTitle');
+    if (document.getElementById('settingsPanel').classList.contains('open'))    renderSettingsPanel();
+    if (document.getElementById('rawSettingsPanel').classList.contains('open')) renderRawSettingsPanel();
+  }
+
+  // トーストの文言は普段「保存しました」で固定なので、一時的に差し替えて元に戻す
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    const prev  = toast.textContent;
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); toast.textContent = prev; }, 1800);
   }
 
   // ---- Init ----
